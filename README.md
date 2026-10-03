@@ -49,6 +49,38 @@ M-x genetics-compare                         ; two loaded kits
 
 `genetics-open` prompts starting in `genetics-data-directory`.
 
+## What is supported, and what is not
+
+Consumer genetics produces several very different kinds of file. Only
+*genotype* files (one call per position) can be read; raw sequencer output
+and finished reports cannot.
+
+| File | What it is | Status |
+|------|------------|--------|
+| 23andMe raw data `.txt` | Genotyping-array calls at ~600k known SNPs, keyed by rsid, GRCh37 | **Supported, verified on a real v5 kit** (638,573 SNPs, ~19 s to parse). Summary, browse, lookup, curated annotations, APOE, report, export all work. |
+| AncestryDNA / MyHeritage / FamilyTreeDNA raw data | Same kind of array data, different column layouts | Supported; tested on synthetic fixtures only |
+| Whole-genome VCF (`.vcf` / `.vcf.gz`), e.g. Nucleus | Variant calls from sequencing, usually GRCh38 | **Partly supported, verified on a real 429 MB Nucleus file** (5.1M records, offset-indexed in ~30 s, ~1.5 GB decompressed cache). Opening, summary and browsing by chromosome/position work. See the limits below. |
+| FASTQ (`.fastq.gz`) | Raw sequencer reads (tens of GB), no genotypes yet | **Not supported, by design.** Reads have to be aligned to a reference and variant-called (e.g. bwa-mem2 + GATK or DeepVariant) to produce a VCF. Nucleus already did this; their VCF is the product of these FASTQs, so open the VCF instead. |
+| BAM / CRAM | Aligned reads | Not supported (same reason) |
+| Promethease exports, 23andMe ancestry/haplogroup reports, family-tree JSON, PDF reports | Interpretations derived from the raw data | Not supported; these are outputs, not inputs |
+
+Limits for whole-genome VCFs like Nucleus's, all tracked as open work:
+
+- **No rsids.** Nucleus writes `.` in every ID field, so lookup by rsid,
+  curated annotations, the APOE section and the report find nothing.
+  Position-based lookup with build-specific coordinates is needed.
+- **Different build.** Nucleus is GRCh38 and 23andMe is GRCh37. The same SNP
+  sits at different positions, so `genetics-compare` between them is not
+  meaningful without liftover, which this package does not do.
+- **Variant sites only.** A WGS VCF usually lists only positions that differ
+  from the reference. A covered site that is absent is most likely
+  homozygous reference, not a no-call; the package does not yet make that
+  distinction.
+- **Large-file mode** (above `genetics-vcf-eager-limit`) skips no-call,
+  heterozygosity and sex statistics.
+- The per-chromosome summary also lists every alt, decoy, HLA and unplaced
+  contig.
+
 ## Supported formats
 
 Detection looks at header comments and columns, not the file extension.
