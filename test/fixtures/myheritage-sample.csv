@@ -1,0 +1,14 @@
+# MyHeritage DNA raw data.
+# This file was generated on 2026-01-03 12:00:00
+# SYNTHETIC TEST DATA - not a real person's genotypes.
+# The data in this file is in the GRCh37 (build 37) assembly.
+# Genotypes are on the forward (+) strand.
+RSID,CHROMOSOME,POSITION,RESULT
+"rs4477212","1","82154","AA"
+"rs3094315","1","752566","AG"
+"rs3131972","1","752721","--"
+"rs1801133","1","11856378","AG"
+"rs429358","19","45411941","CC"
+"rs7412","19","45412079","CC"
+"rs5001","X","1000","AG"
+"rs7001","MT","100","A"

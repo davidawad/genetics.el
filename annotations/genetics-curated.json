@@ -1,0 +1,130 @@
+[
+  {
+    "rsid": "rs429358",
+    "gene": "APOE",
+    "risk_allele": "C",
+    "other_allele": "T",
+    "effect": "Defines the APOE e4 allele together with rs7412 (e4 = C at rs429358 plus C at rs7412). Each copy of C at rs429358 is part of the e4 (or rare e1) haplotype, associated with higher late-onset Alzheimer's disease risk.",
+    "magnitude": 3,
+    "strand": "+ strand, GRCh37: T/C. APOE lies on the + strand, so the C allele is also the gene-strand allele. Combine with rs7412 to get the haplotype (see the APOE section of the report).",
+    "notes": "Informational only, not medical advice. Do not interpret in isolation: use the APOE haplotype. dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs429358",
+    "url": "https://www.snpedia.com/index.php/Rs429358",
+    "genotypes": {
+      "TT": "No C allele: no e4 (or e1) haplotype from this SNP.",
+      "CT": "One C allele: one e4 (or rare e1) haplotype; confirm with rs7412.",
+      "CC": "Two C alleles: two e4 (or rare e1) haplotypes; confirm with rs7412."
+    }
+  },
+  {
+    "rsid": "rs7412",
+    "gene": "APOE",
+    "risk_allele": "T",
+    "other_allele": "C",
+    "effect": "Defines the APOE e2 allele together with rs429358 (e2 = T at rs429358 plus T at rs7412). The T allele marks e2 (or rare e1) and is associated with lower Alzheimer's risk but possible type III hyperlipoproteinemia.",
+    "magnitude": 2,
+    "strand": "+ strand, GRCh37: C/T. APOE lies on the + strand, so the T allele is also the gene-strand allele.",
+    "notes": "Informational only, not medical advice. Use together with rs429358. dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs7412",
+    "url": "https://www.snpedia.com/index.php/Rs7412",
+    "genotypes": {
+      "CC": "No T allele: no e2 (or e1) haplotype from this SNP.",
+      "CT": "One T allele: one e2 (or rare e1) haplotype; confirm with rs429358.",
+      "TT": "Two T alleles: two e2 (or rare e1) haplotypes; confirm with rs429358."
+    }
+  },
+  {
+    "rsid": "rs1801133",
+    "gene": "MTHFR",
+    "risk_allele": "A",
+    "other_allele": "G",
+    "effect": "MTHFR C677T (A222V). The variant allele reduces MTHFR enzyme activity; the clinical impact is modest and depends on folate status.",
+    "magnitude": 2,
+    "strand": "Reported on the + strand (GRCh37) as G/A. MTHFR is on the - strand, so the commonly named 677T variant (gene strand, C>T) appears as A on the + strand. Risk allele here = A (+ strand) = T (gene strand).",
+    "notes": "Informational only, not medical advice. Many labs report this SNP on the gene strand (C/T); check the strand before comparing. dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs1801133",
+    "url": "https://www.snpedia.com/index.php/Rs1801133",
+    "genotypes": {
+      "GG": "No copies of 677T (gene-strand notation 677CC): typical enzyme activity.",
+      "AG": "One copy of 677T (heterozygous, 677CT): mildly reduced enzyme activity in some studies.",
+      "AA": "Two copies of 677T (homozygous, 677TT): reduced enzyme activity (roughly a third of typical in vitro); health impact is modest and context dependent."
+    }
+  },
+  {
+    "rsid": "rs1801131",
+    "gene": "MTHFR",
+    "risk_allele": "G",
+    "other_allele": "T",
+    "effect": "MTHFR A1298C (E429A). The variant allele is associated with a mild reduction in enzyme activity, smaller than C677T.",
+    "magnitude": 1,
+    "strand": "Reported on the + strand (GRCh37) as T/G. MTHFR is on the - strand, so the named 1298C variant (gene strand, A>C) appears as G on the + strand. Risk allele here = G (+ strand) = C (gene strand). Verify the strand against your data source.",
+    "notes": "Informational only, not medical advice. dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs1801131",
+    "url": "https://www.snpedia.com/index.php/Rs1801131",
+    "genotypes": {
+      "TT": "No copies of 1298C (gene-strand notation 1298AA).",
+      "GT": "One copy of 1298C (heterozygous, 1298AC): minor effect.",
+      "GG": "Two copies of 1298C (homozygous, 1298CC): mildly reduced enzyme activity."
+    }
+  },
+  {
+    "rsid": "rs6025",
+    "gene": "F5",
+    "risk_allele": "T",
+    "other_allele": "C",
+    "effect": "Factor V Leiden (R506Q). The variant allele causes activated protein C resistance and raises the risk of venous thrombosis.",
+    "magnitude": 4,
+    "strand": "Reported on the + strand (GRCh37) as C/T. F5 is on the - strand, so the Factor V Leiden change (gene strand G>A) appears as T on the + strand. Risk allele here = T (+ strand) = A (gene strand).",
+    "notes": "Informational only, not medical advice. A positive result should be confirmed by a clinical test and discussed with a clinician. dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs6025",
+    "url": "https://www.snpedia.com/index.php/Rs6025",
+    "genotypes": {
+      "CC": "No Factor V Leiden allele.",
+      "CT": "Heterozygous Factor V Leiden: venous thrombosis risk is increased several-fold over baseline (estimates vary).",
+      "TT": "Homozygous Factor V Leiden: much higher relative venous thrombosis risk (estimates vary widely); seek clinical advice."
+    }
+  },
+  {
+    "rsid": "rs1800562",
+    "gene": "HFE",
+    "risk_allele": "A",
+    "other_allele": "G",
+    "effect": "HFE C282Y. Homozygosity is the main cause of HFE hereditary hemochromatosis (iron overload), with incomplete penetrance.",
+    "magnitude": 4,
+    "strand": "Reported on the + strand (GRCh37) as G/A. HFE is on the + strand, so the A allele is also the gene-strand allele (c.845G>A, p.Cys282Tyr).",
+    "notes": "Informational only, not medical advice. Confirm with clinical testing (ferritin, transferrin saturation). dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs1800562",
+    "url": "https://www.snpedia.com/index.php/Rs1800562",
+    "genotypes": {
+      "GG": "No C282Y allele.",
+      "AG": "One C282Y allele (carrier): usually no iron overload on its own.",
+      "AA": "Two C282Y alleles: at risk of HFE hemochromatosis; penetrance is incomplete, seek clinical advice."
+    }
+  },
+  {
+    "rsid": "rs4988235",
+    "gene": "MCM6/LCT",
+    "risk_allele": "A",
+    "other_allele": "G",
+    "effect": "LCT -13910 C/T. The T allele (gene strand) is the lactase persistence allele in European-ancestry populations. This is a trait, not a disease risk.",
+    "magnitude": 1,
+    "strand": "Reported on the + strand (GRCh37) as G/A. The gene-strand -13910*C (non-persistent) and *T (persistent) appear as G and A respectively on the + strand. Risk (persistence) allele here = A (+ strand) = T (gene strand).",
+    "notes": "Informational only. Other variants cause lactase persistence in other populations, so GG does not guarantee lactose intolerance. dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs4988235",
+    "url": "https://www.snpedia.com/index.php/Rs4988235",
+    "genotypes": {
+      "GG": "Two non-persistence alleles (gene strand CC): lactase activity likely declines in adulthood in European-ancestry people.",
+      "AG": "One persistence allele (gene strand CT): lactase persistence is typically dominant, so likely persistent.",
+      "AA": "Two persistence alleles (gene strand TT): lactase persistence."
+    }
+  },
+  {
+    "rsid": "rs4244285",
+    "gene": "CYP2C19",
+    "risk_allele": "A",
+    "other_allele": "G",
+    "effect": "CYP2C19*2 (c.681G>A) is a loss-of-function allele that reduces metabolism of drugs such as clopidogrel.",
+    "magnitude": 3,
+    "strand": "Reported on the + strand (GRCh37) as G/A. CYP2C19 is on the + strand, so A is also the gene-strand allele.",
+    "notes": "Informational only, not medical advice. Do not change medication on the basis of this file; discuss pharmacogenomic results with a clinician. dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs4244285",
+    "url": "https://www.snpedia.com/index.php/Rs4244285",
+    "genotypes": {
+      "GG": "No *2 allele (*1/*1 unless other star alleles are present): normal CYP2C19 function from this SNP.",
+      "AG": "One *2 allele (*1/*2): likely intermediate metabolizer.",
+      "AA": "Two *2 alleles (*2/*2): likely poor metabolizer."
+    }
+  }
+]
