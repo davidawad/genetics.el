@@ -1,0 +1,30 @@
+#+TITLE: Example genetics annotations
+# One heading per SNP.  Properties: RSID (optional if the heading contains an
+# rsNNN id), GENE, RISK_ALLELE, OTHER_ALLELE, EFFECT, MAGNITUDE, URL, STRAND,
+# NOTES (optional; otherwise the heading body is used) and GT_<genotype>
+# properties giving a per-genotype interpretation.
+# Add this file to `genetics-annotation-files' to use it.
+
+* rs1805007 MC1R R151C
+:PROPERTIES:
+:GENE: MC1R
+:RISK_ALLELE: T
+:OTHER_ALLELE: C
+:EFFECT: Associated with red hair and fair skin.
+:MAGNITUDE: 2
+:STRAND: + strand, GRCh37: C/T.
+:URL: https://www.snpedia.com/index.php/Rs1805007
+:GT_CC: No R151C allele.
+:GT_CT: One R151C allele.
+:GT_TT: Two R151C alleles.
+:END:
+Example entry only.  Informational, not medical advice.
+
+* rs12913832 HERC2
+:PROPERTIES:
+:RISK_ALLELE: G
+:OTHER_ALLELE: A
+:GENE: HERC2
+:EFFECT: Strongly associated with blue versus brown eye colour.
+:END:
+G (+ strand) is associated with blue eyes in people of European ancestry.

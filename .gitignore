@@ -1,0 +1,6 @@
+*.elc
+genetics-cache/
+.cache/
+*~
+\#*\#
+.#*

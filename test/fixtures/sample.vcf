@@ -1,0 +1,23 @@
+##fileformat=VCFv4.2
+##fileDate=20260103
+##source=synthetic-test-data
+##reference=GRCh37
+##contig=<ID=1,length=249250621,assembly=GRCh37>
+##contig=<ID=19,length=59128983,assembly=GRCh37>
+##contig=<ID=X,length=155270560,assembly=GRCh37>
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	82154	rs4477212	A	G	.	PASS	.	GT:DP	0/0:30
+chr1	752566	rs3094315	A	G	.	PASS	.	GT:DP	0|1:25
+chr1	752721	rs3131972	A	G	.	PASS	.	GT	1|1
+chr1	900000	.	C	T	.	PASS	.	GT	0/1
+chr1	900100	rs9999	A	G,T	.	PASS	.	GT	1/2
+chr1	900200	rs9998	A	G,T	.	PASS	.	GT	0/2
+chr1	900300	rs9997	AT	A	.	PASS	.	GT	0/1
+chr1	900400	rs9996	A	G	.	PASS	.	GT	./.
+chr1	900500	rs9995	A	G	.	PASS	.	GT	./1
+chr19	45411941	rs429358	T	C	.	PASS	.	GT	0/1
+chr19	45412079	rs7412	C	T	.	PASS	.	GT	0|0
+chrX	1000	rs5001	A	G	.	PASS	.	GT	1
+chrM	100	rs7001	A	G	.	PASS	.	GT	1
