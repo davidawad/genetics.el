@@ -522,10 +522,11 @@ on Ubuntu, macOS and Windows with Emacs 29.1 and 30.1. Tests that need
 `gzip` or `sh` skip cleanly where those are absent; the zlib fallback is
 tested with committed `.gz` fixtures, so it runs everywhere.
 
-Files: `genetics.el` (entry point), `genetics-core.el`, `genetics-parse.el`,
+Files: `genetics.el` (entry point), `genetics-base.el`, `genetics-core.el`,
+`genetics-detect.el`, `genetics-gzip.el`, `genetics-parse.el`,
 `genetics-source.el` (native / genome-cli source layer),
 `genetics-fastq.el` (genome pipeline commands), `genetics-stats.el`,
-`genetics-annotate.el`, `genetics-browse.el`, `genetics-lookup.el`,
+`genetics-catalog.el`, `genetics-annotate.el`, `genetics-browse.el`, `genetics-lookup.el`,
 `genetics-report.el`, `genetics-org.el` (Org dynamic blocks),
 `genetics-compare.el`, `genetics-export.el`, `genetics-snpedia.el`. Tests live in `test/*-test.el`, fixtures (synthetic,
 fake genotypes) in `test/fixtures/`. `test/bin/genome` (with the
