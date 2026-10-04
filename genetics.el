@@ -25,6 +25,11 @@
 ;;   M-x genetics-lookup    one rsid across all loaded kits
 ;;   M-x genetics-report    Org report of annotated findings and APOE
 ;;   M-x genetics-compare   concordance between two kits
+;;   M-x genetics-fastq-plan / genetics-fastq-run
+;;                          FASTQ reads -> VCF through `genome pipeline'
+;;
+;; Files are read by `genetics-source-function': genome-cli (the `genome'
+;; executable) when installed, else the Emacs Lisp parser.
 ;;
 ;; PRIVACY: no data leaves your machine.  The only network code lives in
 ;; genetics-snpedia.el, is off by default, and sends only an rsid.
@@ -37,6 +42,8 @@
 (require 'button)
 (require 'genetics-core)
 (require 'genetics-parse)
+(require 'genetics-source)
+(require 'genetics-fastq)
 (require 'genetics-stats)
 (require 'genetics-annotate)
 (require 'genetics-browse)
@@ -74,23 +81,36 @@
       (insert (format "Kit:       %s\n" (genetics-kit-name kit)))
       (insert (format "File:      %s\n" (abbreviate-file-name (genetics-kit-file kit))))
       (insert (format "Format:    %s\n" (genetics--format-label (genetics-kit-format kit))))
+      (insert (format "Source:    %s\n"
+                      (if (genetics-kit-backend kit)
+                          (format "genome-cli (kit %s)" (genetics-kit-backend-id kit))
+                        "Emacs Lisp parser")))
       (insert (format "Build:     GRCh%s\n" (or (genetics-kit-build kit) "unknown")))
       (insert (format "Chip:      %s\n" (or (genetics-kit-chip kit) "unknown")))
+      (when (genetics-kit-assay kit)
+        (insert (format "Assay:     %s%s\n" (genetics-kit-assay kit)
+                        (pcase (genetics-kit-ref-calls kit)
+                          ('absent-means-ref ", variant sites only (absent = reference, inferred)")
+                          ('explicit ", every assayed site listed")
+                          (_ "")))))
       (when (genetics-kit-sample kit)
         (insert (format "Sample:    %s\n" (genetics-kit-sample kit))))
       (insert (format "SNPs:      %d%s\n" total
-                      (if (genetics-kit-lazy kit)
-                          " (offset-indexed; records are read on demand)" "")))
-      (if (genetics-kit-lazy kit)
+                      (cond ((genetics-kit-lazy kit)
+                             " (offset-indexed; records are read on demand)")
+                            ((genetics-kit-backend kit)
+                             " (held by genome-cli; records are read on demand)")
+                            (t ""))))
+      (if (and (genetics-kit-lazy kit) (not (plist-get s :nocalls)))
           (insert "No-calls, het/hom counts and sex inference are not computed in offset-indexed mode.\n")
         (insert (format "No-calls:  %d (%.2f%%)\n" (plist-get s :nocalls)
                         (* 100 (or (genetics-nocall-rate kit) 0))))
         (insert (format "Het/Hom:   %d heterozygous, %d homozygous, %d hemizygous\n"
-                        (plist-get s :het) (plist-get s :hom)
-                        (plist-get s :hemi)))
+                        (or (plist-get s :het) 0) (or (plist-get s :hom) 0)
+                        (or (plist-get s :hemi) 0)))
         (insert (format "Sex:       %s\n" (genetics-sex-description kit))))
       (insert "\nPer-chromosome counts\n")
-      (dolist (c (plist-get s :chrom-counts))
+      (dolist (c (genetics-fold-chrom-counts (plist-get s :chrom-counts)))
         (insert (format "  %-4s %8d\n" (car c) (cdr c))))
       (insert "\nCaveats\n")
       (dolist (c (genetics-kit-caveats kit))
@@ -139,24 +159,62 @@
   (interactive)
   (genetics-report genetics--buffer-kit))
 
+(defun genetics--show-unsupported (file format)
+  "Explain in a buffer why FILE of FORMAT (`fastq', `alignment') cannot open.
+Return the buffer."
+  (let ((buf (get-buffer-create "*genetics: raw reads*")))
+    (with-current-buffer buf
+      (special-mode)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (propertize (abbreviate-file-name file) 'face 'bold) "\n\n")
+        (pcase format
+          ('fastq
+           (insert genetics-fastq-explanation "\n\n")
+           (genetics--insert-button
+            "[Show the genome-cli pipeline plan]"
+            (lambda () (genetics-fastq-plan (list file))))
+           (insert "\n"))
+          (_ (insert "BAM, CRAM and SAM files hold aligned reads, not genotypes. Run a variant caller (e.g. DeepVariant or GATK HaplotypeCaller) to produce a VCF, then open the VCF.\n")))
+        (insert "\nNothing was loaded.\n")
+        (goto-char (point-min))))
+    (pop-to-buffer buf)
+    buf))
+
+(defun genetics--raw-reads-format (file)
+  "Return `fastq' or `alignment' for a FASTQ or BAM/CRAM/SAM FILE, else nil."
+  (cond ((genetics-fastq-file-p file) 'fastq)
+        ((let ((case-fold-search t))
+           (string-match-p genetics--alignment-name-regexp file))
+         'alignment)))
+
 ;;;###autoload
 (defun genetics-open (file)
-  "Parse genotype FILE, register the kit and show its summary.
-Returns the kit."
+  "Read genotype FILE, register the kit and show its summary.
+The kit comes from `genetics-source-function' (genome-cli or the Emacs
+Lisp parser).  Returns the kit.  FASTQ and BAM/CRAM files hold reads,
+not genotypes: they are explained in a buffer instead, and nil is
+returned."
   (interactive
    (list (read-file-name "Genetics file: " genetics-data-directory nil t)))
-  (let ((kit (genetics-parse-file file)))
-    (setf (genetics-kit-name kit) (genetics--unique-name
-                                   (genetics-kit-name kit)
-                                   (genetics-kit-file kit)))
-    (genetics-register-kit kit)
-    (genetics-summary kit)
-    (when (cl-some (lambda (k) (and (not (eq k kit))
-                                    (genetics-builds-differ-p k kit)))
-                   genetics-loaded-kits)
-      (display-warning 'genetics
-                       "Loaded kits use different genome builds; do not compare positions across them (no liftover)."))
-    kit))
+  (let ((raw (genetics--raw-reads-format file)))
+    (if raw
+        (progn (genetics--show-unsupported file raw) nil)
+      (genetics--register-and-show (genetics-source-open file)))))
+
+(defun genetics--register-and-show (kit)
+  "Register KIT under a unique name, show its summary and return it."
+  (setf (genetics-kit-name kit) (genetics--unique-name
+                                 (genetics-kit-name kit)
+                                 (genetics-kit-file kit)))
+  (genetics-register-kit kit)
+  (genetics-summary kit)
+  (when (cl-some (lambda (k) (and (not (eq k kit))
+                                  (genetics-builds-differ-p k kit)))
+                 genetics-loaded-kits)
+    (display-warning 'genetics
+                     "Loaded kits use different genome builds; do not compare positions across them (no liftover)."))
+  kit)
 
 ;;;###autoload
 (defun genetics-close (kit)

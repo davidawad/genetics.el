@@ -38,9 +38,21 @@
 Keys: :overlap :compared :concordant :discordant (list of (RSID GA GB))
 :complement (list of (RSID GA GB)) :concordance (percent or nil)
 :build-mismatch.  Only records with calls in both kits are compared;
-hemizygous alleles compare as their homozygous form."
-  (let* ((a (genetics-find-kit a)) (b (genetics-find-kit b))
-         (small (if (<= (genetics-kit-snp-count a) (genetics-kit-snp-count b))
+hemizygous alleles compare as their homozygous form.  Two kits served
+by the same genome-cli backend are compared by genome-cli."
+  (let ((a (genetics-find-kit a)) (b (genetics-find-kit b)))
+    (cond
+     ((and (genetics-kit-backend a)
+           (eq (genetics-kit-backend a) (genetics-kit-backend b)))
+      (funcall (genetics-kit-backend a) 'compare a b))
+     ((or (genetics-kit-backend a) (genetics-kit-backend b))
+      (genetics--error 'genetics-error
+                       "Cannot compare a genome-cli kit with a kit parsed in Emacs; open both with the same `genetics-source-function'"))
+     (t (genetics--compare-native a b)))))
+
+(defun genetics--compare-native (a b)
+  "Compare kits A and B parsed in Emacs, see `genetics-compare-kits'."
+  (let* ((small (if (<= (genetics-kit-snp-count a) (genetics-kit-snp-count b))
                     a b))
          (overlap 0) (compared 0) (concordant 0) (discordant nil)
          (complement nil))
@@ -94,6 +106,12 @@ Returns the buffer."
         (insert (format "Comparing %s (GRCh%s) with %s (GRCh%s)\n\n"
                         (genetics-kit-name a) (or (genetics-kit-build a) "?")
                         (genetics-kit-name b) (or (genetics-kit-build b) "?")))
+        (when (plist-get r :build)
+          (insert (format "Compared by genome-cli on %s.\n" (plist-get r :build))))
+        (dolist (w (plist-get r :warnings))
+          (insert (format "Note: %s\n" w)))
+        (when (or (plist-get r :build) (plist-get r :warnings))
+          (insert "\n"))
         (when (plist-get r :build-mismatch)
           (insert "WARNING: the kits are on different genome builds. Matching is by rsid or chrom:pos id; positions and reference alleles differ between builds and no liftover is performed, so results may be misleading.\n\n"))
         (insert (format "Overlapping ids:     %d\n" (plist-get r :overlap)))
@@ -106,7 +124,8 @@ Returns the buffer."
         (insert (format "Complement-strand:   %d (same alleles on the opposite strand; excluded from concordant)\n"
                         (length (plist-get r :complement))))
         (insert (format "Discordant:          %d\n\n"
-                        (length (plist-get r :discordant))))
+                        (or (plist-get r :discordant-count)
+                            (length (plist-get r :discordant)))))
         (dolist (section '((:discordant . "Discordant calls")
                            (:complement . "Possible complement-strand differences")))
           (when (plist-get r (car section))

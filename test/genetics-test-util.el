@@ -29,15 +29,48 @@
   `(let* ((genetics-cache-directory (file-name-as-directory
                                      (make-temp-file "genetics-test-cache" t)))
           (genetics-use-cache nil)
+          (genetics-source-function #'genetics-source-native)
           (genetics-loaded-kits nil)
           (genetics-snpedia-enabled nil)
           (genetics-snpedia-confirmed nil)
           (genetics--annotation-cache nil))
-     (unwind-protect (progn ,@body)
+     (unwind-protect (let ((genetics-test--temp-dir nil))
+                       (unwind-protect (progn ,@body)
+                         (when genetics-test--temp-dir
+                           (delete-directory genetics-test--temp-dir t))))
        (delete-directory genetics-cache-directory t)
        (dolist (b (buffer-list))
          (when (string-prefix-p "*genetics" (buffer-name b))
            (kill-buffer b))))))
+
+(defvar genetics-test--temp-dir nil
+  "Per-test temp directory, created on demand by `genetics-test-temp-dir'.")
+
+(defun genetics-test-temp-dir ()
+  "Return a temp directory removed when `genetics-test-with-env' ends."
+  (or genetics-test--temp-dir
+      (setq genetics-test--temp-dir (make-temp-file "genetics-test-dir" t))))
+
+(defun genetics-test-fake-genome ()
+  "Return the path of the fake genome-cli executable (test/bin/genome)."
+  (expand-file-name "bin/genome" genetics-test--dir))
+
+(defmacro genetics-test-with-fake-genome (log &rest body)
+  "Run BODY with genome-cli replaced by the fake; bind LOG to its argv log.
+LOG is a function of no arguments returning the logged argv lines."
+  (declare (indent 1))
+  (let ((file (make-symbol "file")))
+    `(let* ((,file (make-temp-file "genetics-genome-log"))
+            (process-environment (cons (concat "GENETICS_FAKE_GENOME_LOG=" ,file)
+                                       process-environment))
+            (genetics-genome-executable (genetics-test-fake-genome))
+            (genetics-source-function #'genetics-source-genome-cli)
+            (,log (lambda ()
+                    (with-temp-buffer
+                      (insert-file-contents ,file)
+                      (split-string (buffer-string) "\n" t)))))
+       (unwind-protect (progn ,@body)
+         (delete-file ,file)))))
 
 (defun genetics-test-load (name &rest args)
   "Parse fixture NAME with ARGS and register the kit."

@@ -31,7 +31,10 @@
 (defconst genetics--detect-bytes 65536
   "Number of leading bytes inspected when detecting a format.")
 
-(defconst genetics--cache-version 1
+(defconst genetics--block-size 256
+  "Records between two entries of the position index of a lazy VCF.")
+
+(defconst genetics--cache-version 3
   "Version stamp of the on-disk cache layout.")
 
 ;;;; Detection
@@ -73,6 +76,31 @@
   "Return non-nil if FILE has a .gz extension."
   (string-suffix-p ".gz" file t))
 
+(defconst genetics--fastq-name-regexp
+  "\\.\\(fastq\\|fq\\)\\(\\.gz\\|\\.bz2\\|\\.xz\\|\\.zst\\)?\\'"
+  "File names that are FASTQ reads.")
+
+(defconst genetics--alignment-name-regexp
+  "\\.\\(bam\\|cram\\|sam\\)\\'"
+  "File names that are aligned reads.")
+
+(defun genetics-fastq-file-p (file)
+  "Return non-nil if FILE is a FASTQ file, judged by name or content.
+A FASTQ record is four lines: @name, bases, +, qualities."
+  (or (let ((case-fold-search t))
+        (string-match-p genetics--fastq-name-regexp file))
+      (and (not (genetics--gz-file-p file))
+           (file-readable-p file)
+           (not (file-directory-p file))
+           (let ((lines (genetics--head-lines
+                         (with-temp-buffer
+                           (set-buffer-multibyte nil)
+                           (insert-file-contents-literally file nil 0 4096)
+                           (buffer-string)))))
+             (and (string-prefix-p "@" (or (nth 0 lines) ""))
+                  (string-match-p "\\`[ACGTNacgtn.]+\\'" (or (nth 1 lines) ""))
+                  (string-prefix-p "+" (or (nth 2 lines) "")))))))
+
 (defun genetics--read-head (file)
   "Return the first `genetics--detect-bytes' bytes of FILE as a string."
   (with-temp-buffer
@@ -82,13 +110,32 @@
 
 (defun genetics-detect-format (file)
   "Return the format symbol of FILE.
-One of `23andme', `ancestry', `myheritage', `ftdna' or `vcf'.  Compressed
-\(.gz) files are assumed to be VCF and verified when parsed."
+One of `23andme', `ancestry', `myheritage', `ftdna', `vcf', or `fastq'
+and `alignment' for raw or aligned reads, which hold no genotypes.
+Other compressed (.gz) files are assumed to be VCF and verified when
+parsed."
   (unless (file-readable-p file)
     (genetics--error 'genetics-file-error "Cannot read file: %s" file))
-  (if (genetics--gz-file-p file)
-      'vcf
-    (genetics--detect-head (genetics--read-head file))))
+  (cond ((genetics-fastq-file-p file) 'fastq)
+        ((let ((case-fold-search t))
+           (string-match-p genetics--alignment-name-regexp file))
+         'alignment)
+        ((genetics--gz-file-p file) 'vcf)
+        (t (genetics--detect-head (genetics--read-head file)))))
+
+(defconst genetics-fastq-explanation
+  "FASTQ files hold raw sequencer reads, not genotypes. Reads must be aligned to a reference genome and variant-called to produce a VCF before they can be read here. If your provider (e.g. Nucleus) also gave you a VCF, open that: it is the product of these reads. Otherwise `genetics-fastq-plan' shows how genome-cli would do it (`genome pipeline plan') and `genetics-fastq-run' runs it."
+  "Why a FASTQ file cannot be opened directly.")
+
+(defun genetics--signal-unsupported (file format)
+  "Signal an error: FILE of FORMAT has no genotypes, and say why."
+  (pcase format
+    ('fastq (genetics--error 'genetics-fastq-file "%s: %s"
+                             (file-name-nondirectory file)
+                             genetics-fastq-explanation))
+    (_ (genetics--error 'genetics-unsupported-file
+                        "%s holds aligned reads (BAM/CRAM/SAM), not genotypes; variant-call it to a VCF first"
+                        (file-name-nondirectory file)))))
 
 (defun genetics--detect-build (text)
   "Return \"37\", \"38\" or nil from header TEXT."
@@ -100,6 +147,54 @@ One of `23andme', `ancestry', `myheritage', `ftdna' or `vcf'.  Compressed
            "37")
           ((string-search "length=249250621" text) "37")
           ((string-search "length=248956422" text) "38"))))
+
+(defun genetics--gvcf-header-p (text)
+  "Return non-nil if VCF header TEXT declares a gVCF (reference blocks)."
+  (or (string-search "##GVCFBlock" text)
+      (string-search "<NON_REF>" text)
+      (string-search "ID=*,Description=\"Represents any possible" text)))
+
+(defun genetics--vcf-ref-calls (gvcf count homref)
+  "Decide the reference-call model of a VCF.
+GVCF is non-nil for a gVCF header, COUNT the record count and HOMREF the
+number of explicit homozygous-reference calls.  See
+`genetics-vcf-ref-calls'.  Not cached: it follows the current options."
+  (cond (gvcf 'explicit)
+        ((not (eq genetics-vcf-ref-calls 'auto)) genetics-vcf-ref-calls)
+        ((and (zerop homref) (>= count genetics-wgs-min-records))
+         'absent-means-ref)
+        (t 'unknown)))
+
+(defun genetics--hom-ref-gt-p (line sample-index)
+  "Return non-nil if VCF LINE has a homozygous-reference GT in SAMPLE-INDEX."
+  (let* ((f (split-string line "\t"))
+         (fmt (nth 8 f)) (sample (nth sample-index f))
+         (i (and fmt sample
+                 (cl-position "GT" (split-string fmt ":") :test #'equal)))
+         (gt (and i (nth i (split-string sample ":"))))
+         (idx (and gt (split-string gt "[/|]" t))))
+    (and idx (cl-every (lambda (a) (equal a "0")) idx))))
+
+(defun genetics--apply-vcf-model (kit)
+  "Set the assay and reference-call model of eager KIT from its stats."
+  (if (eq (genetics-kit-format kit) 'vcf)
+      (let* ((s (genetics-kit-stats kit))
+             (rc (genetics--vcf-ref-calls (plist-get s :gvcf)
+                                          (plist-get s :total)
+                                          (plist-get s :hom-ref))))
+        (setf (genetics-kit-ref-calls kit) rc
+              (genetics-kit-assay kit)
+              (genetics--vcf-assay rc (plist-get s :total))))
+    (setf (genetics-kit-ref-calls kit) 'explicit
+          (genetics-kit-assay kit) 'array))
+  kit)
+
+(defun genetics--vcf-assay (ref-calls count)
+  "Guess the assay of a VCF from REF-CALLS and record COUNT."
+  (if (or (eq ref-calls 'absent-means-ref)
+          (>= count genetics-wgs-min-records))
+      'wgs
+    'unknown))
 
 (defun genetics--detect-chip (text count hint)
   "Return a chip version string (v3, v4, v5 or unknown).
@@ -290,6 +385,27 @@ SAMPLE selects a sample column by name; default is the first."
     (list (genetics--detect-build text) name
           (+ 9 (cl-position name names :test #'equal)))))
 
+(defun genetics--vcf-table-add (table snp)
+  "Add VCF record SNP to TABLE under its id without dropping records.
+A second record with the same id (e.g. an indel and a SNP at one
+position) is kept under id~REF>ALT; the single-base record keeps the
+plain id so lookups by rsid or chrom:pos find the SNP."
+  (let* ((key (genetics-snp-rsid snp))
+         (old (gethash key table)))
+    (if (null old)
+        (puthash key snp table)
+      (when (and (genetics--snv-record-p snp)
+                 (not (genetics--snv-record-p old)))
+        (puthash key snp table)
+        (setq snp old))
+      (let* ((base (format "%s~%s>%s" key (genetics-snp-ref snp)
+                           (genetics-snp-alt snp)))
+             (alt base) (n 1))
+        (while (gethash alt table)
+          (setq n (1+ n) alt (format "%s#%d" base n)))
+        (setf (genetics-snp-rsid snp) alt)
+        (puthash alt snp table)))))
+
 (defun genetics--parse-vcf-buffer (sample)
   "Parse the VCF in the current buffer for SAMPLE.
 Return (HEADER-LINES SAMPLE-NAME TABLE BUILD)."
@@ -306,8 +422,7 @@ Return (HEADER-LINES SAMPLE-NAME TABLE BUILD)."
                (let ((snp (genetics--parse-vcf-line
                            (buffer-substring-no-properties (point) eol)
                            (nth 2 info))))
-                 (unless (gethash (genetics-snp-rsid snp) table)
-                   (puthash (genetics-snp-rsid snp) snp table)))))
+                 (genetics--vcf-table-add table snp))))
         (forward-line 1)))
     (unless info
       (setq info (genetics--vcf-header-info (reverse header) sample)))
@@ -315,11 +430,14 @@ Return (HEADER-LINES SAMPLE-NAME TABLE BUILD)."
 
 (defun genetics--index-vcf (data-file sample)
   "Offset-index VCF DATA-FILE for SAMPLE without loading its records.
-Return a plist with :index :ranges :counts :header :sample-index."
+Return a plist with :index :ranges :counts :header :sample-index
+:hom-ref :rsids and :blocks, an alist (CHROM . vector of (POS . OFFSET))
+holding every `genetics--block-size'th record, used to seek by position."
   (let ((index (make-hash-table :test 'equal))
         (ranges (make-hash-table :test 'equal))
         (counts (make-hash-table :test 'equal))
-        (header nil))
+        (blocks (make-hash-table :test 'equal))
+        (header nil) (homref 0) (rsids 0) (sidx nil))
     (genetics--stream-lines
      data-file 0 nil
      (lambda (line off)
@@ -341,7 +459,19 @@ Return a plist with :index :ranges :counts :header :sample-index."
              (if range
                  (setcdr range end)
                (puthash chrom (cons off end) ranges))
+             (when (zerop (% (gethash chrom counts 0)
+                             genetics--block-size))
+               (push (cons (string-to-number pos) off)
+                     (gethash chrom blocks)))
              (puthash chrom (1+ (gethash chrom counts 0)) counts)
+             (unless sidx
+               (setq sidx (nth 2 (genetics--vcf-header-info (reverse header)
+                                                            sample))))
+             (when (and (or (string-search "0/0" line t3)
+                            (string-search "0|0" line t3))
+                        (genetics--hom-ref-gt-p line sidx))
+               (cl-incf homref))
+             (when (string-prefix-p "rs" id) (cl-incf rsids))
              (if (member id '("." ""))
                  (puthash (format "%s:%s" chrom pos) off index)
                (dolist (one (split-string id ";" t))
@@ -352,6 +482,10 @@ Return a plist with :index :ranges :counts :header :sample-index."
         (push (cons c (gethash c ranges)) sorted))
       (let ((info (genetics--vcf-header-info hl sample)))
         (list :index index :ranges (nreverse sorted) :header hl
+              :hom-ref homref :rsids rsids
+              :blocks (mapcar (lambda (c)
+                                (cons c (vconcat (nreverse (gethash c blocks)))))
+                              (hash-table-keys blocks))
               :build (nth 0 info) :sample (nth 1 info)
               :sample-index (nth 2 info)
               :counts (mapcar (lambda (c) (cons c (gethash c counts)))
@@ -427,6 +561,7 @@ Return a plist with :index :ranges :counts :header :sample-index."
                      :chip (genetics-kit-chip kit)
                      :sample (genetics-kit-sample kit)
                      :note (genetics-kit-strand-note kit)
+                     :gvcf (plist-get (genetics-kit-stats kit) :gvcf)
                      :records (vconcat records))
                (current-buffer))))))
 
@@ -455,15 +590,18 @@ Return a plist with :index :ranges :counts :header :sample-index."
               :file file :format (plist-get p :format)
               :build (plist-get p :build) :chip (plist-get p :chip)
               :sample (plist-get p :sample)
-              :strand-note (plist-get p :note) :table table))))))))
+              :strand-note (plist-get p :note) :table table)
+             (plist-get p :gvcf))))))))
 
 ;;;; Entry point
 
-(defun genetics--finish-kit (kit)
-  "Index and compute statistics for eager KIT, then return it."
+(defun genetics--finish-kit (kit &optional gvcf)
+  "Index and compute statistics for eager KIT, then return it.
+GVCF non-nil records that the VCF header declared a gVCF."
   (setf (genetics-kit-chroms kit)
         (genetics--sort-chroms-into (genetics-kit-table kit)))
-  (setf (genetics-kit-stats kit) (genetics-compute-stats kit))
+  (setf (genetics-kit-stats kit)
+        (append (genetics-compute-stats kit) (list :gvcf gvcf)))
   kit)
 
 (defun genetics--base-name (file)
@@ -496,17 +634,19 @@ Return a plist with :index :ranges :counts :header :sample-index."
       (when (zerop (hash-table-count table))
         (genetics--error 'genetics-parse-error "No genotype records in %s" file))
       (let* ((assumed (and (null build) (not (eq format 'vcf))))
-             (build (or build (and (not (eq format 'vcf)) "37"))))
-        (genetics--finish-kit
-         (genetics-kit--create
-          :file file :format format :build build
-          :chip (if (eq format '23andme)
-                    (genetics--detect-chip header (hash-table-count table)
-                                           chip-hint)
-                  "unknown")
-          :sample sname
-          :strand-note (genetics--strand-note format build assumed)
-          :table table))))))
+             (build (or build (and (not (eq format 'vcf)) "37")))
+             (kit (genetics--finish-kit
+                   (genetics-kit--create
+                    :file file :format format :build build
+                    :chip (if (eq format '23andme)
+                              (genetics--detect-chip
+                               header (hash-table-count table) chip-hint)
+                            "unknown")
+                    :sample sname
+                    :strand-note (genetics--strand-note format build assumed)
+                    :table table)
+                   (and (eq format 'vcf) (genetics--gvcf-header-p header)))))
+        kit))))
 
 (defun genetics--parse-lazy (file gz sample)
   "Offset-index VCF FILE (GZ non-nil if compressed) for SAMPLE."
@@ -521,12 +661,21 @@ Return a plist with :index :ranges :counts :header :sample-index."
                              'vcf (plist-get info :build) nil)
                :lazy t :index (plist-get info :index)
                :ranges (plist-get info :ranges) :data-file data
+               :blocks (plist-get info :blocks)
                :line-parser (lambda (line) (genetics--parse-vcf-line line sidx)))))
     (unless (car (plist-get info :ranges))
       (genetics--error 'genetics-parse-error "No genotype records in %s" file))
-    (setf (genetics-kit-stats kit)
-          (list :total (hash-table-count (plist-get info :index))
-                :chrom-counts counts :lazy t))
+    (let ((total (hash-table-count (plist-get info :index)))
+          (rc (genetics--vcf-ref-calls
+               (genetics--gvcf-header-p
+                (mapconcat #'identity (plist-get info :header) "\n"))
+               (hash-table-count (plist-get info :index))
+               (plist-get info :hom-ref))))
+      (setf (genetics-kit-stats kit)
+            (list :total total :chrom-counts counts :lazy t
+                  :rsids (plist-get info :rsids))
+            (genetics-kit-ref-calls kit) rc
+            (genetics-kit-assay kit) (genetics--vcf-assay rc total)))
     kit))
 
 ;;;###autoload
@@ -534,9 +683,14 @@ Return a plist with :index :ranges :counts :header :sample-index."
   "Parse genotype FILE and return a `genetics-kit' (not registered).
 ARGS is a plist: :format forces a format symbol, :chip gives a chip version
 hint, :sample selects a VCF sample column, :lazy non-nil forces offset-index
-mode for VCF, :cache nil disables the on-disk cache for this call."
+mode for VCF, :cache nil disables the on-disk cache for this call,
+:ref-calls and :assay override the detected reference-call model and
+assay (see `genetics-kit').  FASTQ and BAM/CRAM files signal
+`genetics-unsupported-file' with an explanation."
   (let* ((file (expand-file-name file))
          (format (or (plist-get args :format) (genetics-detect-format file)))
+         (_ (when (memq format '(fastq alignment))
+              (genetics--signal-unsupported file format)))
          (gz (genetics--gz-file-p file))
          (size (file-attribute-size (file-attributes file)))
          (lazy (and (eq format 'vcf)
@@ -555,6 +709,15 @@ mode for VCF, :cache nil disables the on-disk cache for this call."
                     k))))
     (setf (genetics-kit-file kit) file)
     (setf (genetics-kit-name kit) (genetics--base-name file))
+    (unless (genetics-kit-lazy kit)
+      (genetics--apply-vcf-model kit))
+    (when (plist-get args :ref-calls)
+      (setf (genetics-kit-ref-calls kit) (plist-get args :ref-calls))
+      (when (and (eq (plist-get args :ref-calls) 'absent-means-ref)
+                 (eq (genetics-kit-assay kit) 'unknown))
+        (setf (genetics-kit-assay kit) 'wgs)))
+    (when (plist-get args :assay)
+      (setf (genetics-kit-assay kit) (plist-get args :assay)))
     kit))
 
 (provide 'genetics-parse)

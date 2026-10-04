@@ -41,9 +41,10 @@ Keys: :chrom :range (START . END) :rsid :genotype :zygosity :annotated.")
 (defvar-local genetics-browse--truncated nil
   "Non-nil when the last refresh hid rows because of the display limit.")
 
-(defun genetics-browse-snp-matches-p (snp filters annotations)
+(defun genetics-browse-snp-matches-p (snp filters annotations &optional build)
   "Return non-nil if SNP satisfies plist FILTERS.
-ANNOTATIONS is the annotation hash table."
+ANNOTATIONS is the annotation hash table; BUILD, the kit's build, lets
+records without an rsid match an annotation by position."
   (let ((chrom (plist-get filters :chrom))
         (range (plist-get filters :range))
         (rx (plist-get filters :rsid))
@@ -60,7 +61,7 @@ ANNOTATIONS is the annotation hash table."
          (or (null zyg)
              (eq zyg (genetics-zygosity (genetics-snp-genotype snp))))
          (or (null (plist-get filters :annotated))
-             (gethash (genetics-snp-rsid snp) annotations)))))
+             (genetics-snp-annotation snp build annotations)))))
 
 (defun genetics-browse-rows (kit filters &optional limit)
   "Return (SNPS . TRUNCATED) for KIT filtered by FILTERS.
@@ -70,7 +71,8 @@ when more records matched than were returned."
     (genetics-kit-map-snps
      kit
      (lambda (snp)
-       (when (genetics-browse-snp-matches-p snp filters annotations)
+       (when (genetics-browse-snp-matches-p snp filters annotations
+                                            (genetics-kit-build kit))
          (if (and limit (>= n limit))
              (progn (setq truncated t) 'stop)
            (push snp rows)
@@ -97,9 +99,9 @@ when more records matched than were returned."
     (when (plist-get filters :annotated) (push "annotated" parts))
     (if parts (string-join (nreverse parts) " ") "none")))
 
-(defun genetics-browse--entry (snp annotations)
-  "Return a tabulated-list entry for SNP using ANNOTATIONS."
-  (let ((ann (gethash (genetics-snp-rsid snp) annotations)))
+(defun genetics-browse--entry (snp annotations &optional build)
+  "Return a tabulated-list entry for SNP using ANNOTATIONS on BUILD."
+  (let ((ann (genetics-snp-annotation snp build annotations)))
     (list (genetics-snp-rsid snp)
           (vector (genetics-snp-rsid snp) (genetics-snp-chrom snp)
                   (number-to-string (genetics-snp-pos snp))
@@ -124,7 +126,9 @@ when more records matched than were returned."
     (when (cdr res)
       (message "Showing first %d matches; refine filters or raise `genetics-browse-limit'"
                genetics-browse-limit))
-    (mapcar (lambda (s) (genetics-browse--entry s annotations)) (car res))))
+    (mapcar (lambda (s) (genetics-browse--entry
+                         s annotations (genetics-kit-build genetics--buffer-kit)))
+            (car res))))
 
 (defun genetics-browse--pos< (a b)
   "Return non-nil if entry A has a smaller position than entry B."

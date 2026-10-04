@@ -51,6 +51,30 @@
         (should (equal "kits --format json" (car (funcall log))))
         (should (string-prefix-p "import " (cadr (funcall log))))))))
 
+(ert-deftest genetics-source-test-reopen-reuses-or-replaces ()
+  ;; Opening a file genome-cli already imported must not fail with
+  ;; "a kit named ... already exists": reuse it when fresh, else --replace.
+  (genetics-test-with-env
+    (let* ((file (genetics-test-fixture "wgs-grch38.vcf"))
+           (kits (lambda (imported-at)
+                   (let ((f (make-temp-file "genetics-kits" nil ".json")))
+                     (with-temp-file f
+                       (insert (format "{\"schema\":\"genome/v1\",\"kind\":\"kits\",\"count\":1,\"data\":[{\"id\":\"k1\",\"name\":\"wgs-grch38\",\"source_format\":\"vcf\",\"assay\":\"wgs\",\"build\":\"GRCh38\",\"records\":27,\"has_rsids\":false,\"ref_calls\":\"absent-means-ref\",\"imported_at\":\"%s\",\"source_path\":\"%s\"}],\"warnings\":[]}"
+                                       imported-at file)))
+                     f))))
+      (genetics-test-with-fake-genome log
+        (let ((process-environment
+               (cons (concat "GENETICS_FAKE_GENOME_KITS=" (funcall kits "2099-01-01T00:00:00Z"))
+                     process-environment)))
+          (genetics-source-open file)
+          (should (equal (funcall log) '("kits --format json" "summary k1 --format json")))))
+      (genetics-test-with-fake-genome log
+        (let ((process-environment
+               (cons (concat "GENETICS_FAKE_GENOME_KITS=" (funcall kits "2000-01-01T00:00:00Z"))
+                     process-environment)))
+          (genetics-source-open file)
+          (should (member (concat "import " file " --replace --format json") (funcall log))))))))
+
 (ert-deftest genetics-source-test-open-maps-kit-and-summary ()
   (genetics-test-with-env
     (genetics-test-with-fake-genome log
@@ -58,7 +82,8 @@
              (kit (genetics-open file))
              (s (genetics-kit-stats kit)))
         (should (equal (funcall log)
-                       (list (concat "import " file " --format json")
+                       (list "kits --format json"
+                             (concat "import " file " --format json")
                              "summary k1 --format json")))
         (should (equal "k1" (genetics-kit-backend-id kit)))
         (should (eq 'vcf (genetics-kit-format kit)))

@@ -1,0 +1,45 @@
+##fileformat=VCFv4.2
+##source=synthetic-test-data (shaped like a variant-only WGS VCF; not real data)
+##reference=GRCh38
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chr6,length=170805979>
+##contig=<ID=chr19,length=58617616>
+##contig=<ID=chrX,length=156040895>
+##contig=<ID=chrY,length=57227415>
+##contig=<ID=chrM,length=16569>
+##contig=<ID=chr1_KI270706v1_random,length=175055>
+##contig=<ID=chrUn_JTFH01000001v1_decoy,length=25139>
+##contig=<ID=HLA-A*01:01:01:01,length=3503>
+##contig=<ID=chrEBV,length=171823>
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SYNTH01
+chr1	11796321	.	G	A	50	PASS	.	GT:DP	0/1:30
+chr1	20000000	.	A	G	50	PASS	.	GT:DP	1/1:30
+chr1	30000000	.	C	T	50	PASS	.	GT:DP	0/1:30
+chr2	100000000	.	T	C	50	PASS	.	GT:DP	0/1:30
+chr6	26092910	.	GACTG	G	50	PASS	.	GT:DP	0/1:30
+chr6	30000000	.	A	G	50	PASS	.	GT:DP	1/1:30
+chr19	44908822	.	C	T	50	PASS	.	GT:DP	0/1:30
+chr19	44910000	.	G	A	50	PASS	.	GT:DP	0/1:30
+chrX	100000	.	A	G	50	PASS	.	GT:DP	0/1:30
+chrX	5000000	.	A	G	50	PASS	.	GT:DP	1/1:30
+chrX	6000000	.	C	T	50	PASS	.	GT:DP	1/1:30
+chrX	7000000	.	G	A	50	PASS	.	GT:DP	1/1:30
+chrX	8000000	.	T	C	50	PASS	.	GT:DP	1/1:30
+chrX	9000000	.	A	C	50	PASS	.	GT:DP	1/1:30
+chrX	10000000	.	G	T	50	PASS	.	GT:DP	1/1:30
+chrX	11000000	.	C	A	50	PASS	.	GT:DP	1/1:30
+chrX	12000000	.	T	G	50	PASS	.	GT:DP	1/1:30
+chrX	13000000	.	A	T	50	PASS	.	GT:DP	0/1:30
+chrX	14000000	.	G	C	50	PASS	.	GT:DP	1/1:30
+chrX	155800000	.	A	G	50	PASS	.	GT:DP	0/1:30
+chrY	3000000	.	G	A	50	PASS	.	GT:DP	1/1:30
+chrY	4000000	.	C	T	50	PASS	.	GT:DP	1/1:30
+chrM	150	.	C	T	50	PASS	.	GT:DP	1/1:30
+chr1_KI270706v1_random	1000	.	A	G	50	PASS	.	GT:DP	0/1:30
+chrUn_JTFH01000001v1_decoy	500	.	C	T	50	PASS	.	GT:DP	1/1:30
+HLA-A*01:01:01:01	200	.	G	A	50	PASS	.	GT:DP	0/1:30
+chrEBV	300	.	T	C	50	PASS	.	GT:DP	1/1:30
