@@ -20,6 +20,10 @@ case "$cmd" in
       *second*) reply kits-k2.json ;;
       *) reply kits.json ;;
     esac ;;
+  kits)
+    # $GENETICS_FAKE_GENOME_KITS: a kits envelope to replay (already imported).
+    if [ -n "$GENETICS_FAKE_GENOME_KITS" ]; then sed "s|@FIXTURES@|$fixtures|g" "$GENETICS_FAKE_GENOME_KITS"; exit 0; fi
+    echo '{"schema":"genome/v1","kind":"kits","count":0,"data":[],"warnings":[]}'; exit 0 ;;
   summary) reply summary.json ;;
   lookup)
     rsid=

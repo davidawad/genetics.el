@@ -406,14 +406,35 @@ OPs: `get' (RSID), `range' (CHROM START END), `map' (CHROM FN) and
 
 ;;;; The genome-cli source
 
+(defun genetics--genome-kits-for (file kits)
+  "Entries of genome/v1 KITS envelope imported from FILE, newest first."
+  (sort (seq-filter (lambda (k) (equal (alist-get 'source_path k) file))
+                    (alist-get 'data kits))
+        (lambda (a b) (string> (or (alist-get 'imported_at a) "")
+                               (or (alist-get 'imported_at b) "")))))
+
+(defun genetics--genome-fresh-p (kit-json file)
+  "Non-nil when KIT-JSON was imported after FILE was last modified."
+  (when-let* ((at (alist-get 'imported_at kit-json)))
+    (not (time-less-p (date-to-time at)
+                      (file-attribute-modification-time (file-attributes file))))))
+
 (defun genetics-source-genome-cli (file &rest _args)
   "Open FILE through genome-cli and return a `genetics-kit'.
-Runs `genome import FILE' and `genome summary' (see
-`genetics-source-genome-cli-explain' for the exact argv).  Records stay
-in genome-cli and are fetched on demand.  Keyword arguments of
-`genetics-parse-file' are accepted and ignored."
+Reuses the kit genome-cli already holds for FILE when it was imported
+after FILE last changed; otherwise runs `genome import FILE' (with
+`--replace' when an older import exists), then `genome summary' (see
+`genetics-source-genome-cli-explain').  Records stay in genome-cli and
+are fetched on demand.  Keyword arguments of `genetics-parse-file' are
+accepted and ignored."
   (let* ((file (expand-file-name file))
-         (kits (genetics-genome-run (genetics-genome-argv 'import file) "kits"))
+         (existing (genetics--genome-kits-for
+                    file (genetics-genome-run (genetics-genome-argv 'kits) "kits")))
+         (fresh (seq-find (lambda (k) (genetics--genome-fresh-p k file)) existing))
+         (kits (if fresh
+                   `((data ,fresh))
+                 (genetics-genome-run (genetics-genome-argv 'import file (and existing t))
+                                      "kits")))
          (kit-json (car (alist-get 'data kits))))
     (unless (alist-get 'id kit-json)
       (genetics--error 'genetics-genome-error

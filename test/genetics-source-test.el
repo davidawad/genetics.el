@@ -48,7 +48,8 @@
         (should (genetics-genome-available-p))
         (should (genetics-kit-backend
                  (genetics-source-open (genetics-test-fixture "wgs-grch38.vcf"))))
-        (should (string-prefix-p "import " (car (funcall log))))))))
+        (should (equal "kits --format json" (car (funcall log))))
+        (should (string-prefix-p "import " (cadr (funcall log))))))))
 
 (ert-deftest genetics-source-test-open-maps-kit-and-summary ()
   (genetics-test-with-env
