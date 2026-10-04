@@ -75,11 +75,10 @@ FILES are FASTQ paths (one file, or R1 and R2 of a pair).  Pure."
 
 (defun genetics--read-fastq-files ()
   "Read one or two FASTQ file names (R1 and optional R2)."
-  (let* ((r1 (read-file-name "FASTQ (R1): " genetics-data-directory nil t))
+  (let* ((r1 (read-file-name "FASTQ (R1): " (genetics--prompt-directory) nil t))
          (r2 (read-file-name "Mate FASTQ (R2, empty if single-end): "
                              (file-name-directory r1) "" nil)))
-    (if (or (string-empty-p r2) (equal (expand-file-name r2)
-                                       (expand-file-name r1))
+    (if (or (string-empty-p r2) (genetics--same-file-p r2 r1)
             (file-directory-p r2))
         (list r1)
       (list r1 r2))))
@@ -195,7 +194,7 @@ except `genome pipeline plan'.  In the plan buffer,
         (while (and (not steps)
                     (re-search-backward "^{\"schema\":\"genome/v1\"" nil t))
           (let ((env (ignore-errors
-                       (json-parse-string
+                       (genetics--json-parse
                         (buffer-substring-no-properties (point) (line-end-position))
                         :object-type 'alist :array-type 'list
                         :null-object nil :false-object nil))))

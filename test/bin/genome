@@ -2,8 +2,10 @@
 # Fake genome-cli for the genetics.el tests.  Replays recorded genome/v1
 # JSON from test/fixtures/genome (synthetic data only) and appends each
 # argv, one line per call, to $GENETICS_FAKE_GENOME_LOG when set.
-# @FIXTURES@ in a reply is replaced by the absolute test/fixtures path.
-fixtures=$(cd "$(dirname "$0")/../fixtures" && pwd)
+# @FIXTURES@ in a reply is replaced by the absolute test/fixtures path,
+# taken from $GENETICS_FAKE_GENOME_FIXTURES when set (the tests set it so
+# the path is spelled as Emacs spells it, e.g. c:/... on Windows).
+fixtures=${GENETICS_FAKE_GENOME_FIXTURES:-$(cd "$(dirname "$0")/../fixtures" && pwd)}
 dir="$fixtures/genome"
 [ -n "$GENETICS_FAKE_GENOME_LOG" ] && printf '%s\n' "$*" >> "$GENETICS_FAKE_GENOME_LOG"
 reply() { sed "s|@FIXTURES@|$fixtures|g" "$dir/$1"; exit "${2:-0}"; }

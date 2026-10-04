@@ -65,9 +65,8 @@
 
 (defun genetics-org--kit-for-file (file)
   "Return the loaded kit read from FILE (expanded), or nil."
-  (let ((file (expand-file-name file)))
-    (cl-find-if (lambda (k) (equal (expand-file-name (genetics-kit-file k)) file))
-                genetics-loaded-kits)))
+  (cl-find-if (lambda (k) (genetics--same-file-p (genetics-kit-file k) file))
+              genetics-loaded-kits))
 
 (defun genetics-org--param-file (params)
   "Return the expanded :file of PARAMS, or nil."
@@ -156,7 +155,7 @@ Pure: nothing is opened or run."
      "Readable formats: 23andMe, AncestryDNA, MyHeritage/FTDNA CSV, VCF and VCF.gz (see README, \"Supported formats\").")
     ((or 'genetics-unsupported-file 'genetics-fastq-file)
      "FASTQ/BAM/CRAM hold reads, not genotypes: make a VCF with M-x genetics-fastq-plan (genome-cli), then point :file at the VCF.")
-    ('genetics-gzip-error "Install gzip, or decompress the VCF first.")
+    ('genetics-gzip-error "Install gzip (or use an Emacs built with zlib), or decompress the VCF first.")
     ('genetics-genome-missing
      "Install genome-cli, set `genetics-genome-executable', or set `genetics-source-function' to `genetics-source-native'.")
     ('genetics-genome-error

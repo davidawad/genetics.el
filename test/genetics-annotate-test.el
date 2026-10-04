@@ -88,6 +88,27 @@
           (should-error (genetics-load-annotation-file txt) :type 'genetics-annotation-error)
         (delete-file txt)))))
 
+(ert-deftest genetics-annotate-test-crlf-utf8-files ()
+  "CRLF and non-ASCII UTF-8 annotation files load like their LF originals."
+  (genetics-test-with-env
+    (dolist (name '("genetics-example.org" "genetics-curated.json"))
+      (let* ((src (expand-file-name (concat "annotations/" name) (genetics-test-root)))
+             (copy (make-temp-file "genetics-test-" nil (concat "." (file-name-extension name)))))
+        (unwind-protect
+            (progn
+              (with-temp-buffer
+                (let ((coding-system-for-read 'utf-8-unix))
+                  (insert-file-contents src))
+                (goto-char (point-min))
+                (when (string-suffix-p ".org" name)
+                  (forward-line 1)
+                  (insert "# Non-ASCII: \u03b54 allele \u2014 caf\u00e9\n"))
+                (let ((coding-system-for-write 'utf-8-dos))
+                  (write-region nil nil copy nil 'silent)))
+              (should (equal (genetics-load-annotation-file src)
+                             (genetics-load-annotation-file copy))))
+          (delete-file copy))))))
+
 (ert-deftest genetics-annotate-test-risk-copies ()
   (should (equal 0 (plist-get (genetics-risk-assess "GG" "A" "G") :copies)))
   (should (equal 1 (plist-get (genetics-risk-assess "AG" "A" "G") :copies)))

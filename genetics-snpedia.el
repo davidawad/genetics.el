@@ -90,7 +90,7 @@
 (defun genetics--snpedia-wikitext (json-text rsid)
   "Extract the wikitext string for RSID from JSON-TEXT."
   (let* ((data (condition-case nil
-                   (json-parse-string json-text :object-type 'alist)
+                   (genetics--json-parse json-text :object-type 'alist)
                  (error (genetics--error 'genetics-snpedia-error
                                          "SNPedia sent invalid JSON for %s" rsid))))
          (parse (alist-get 'parse data))
@@ -109,13 +109,15 @@ Signals `genetics-snpedia-disabled' unless `genetics-snpedia-enabled'."
     (genetics-snpedia-url rsid)         ; validate before anything else
     (if (file-readable-p cache)
         (genetics--snpedia-wikitext
-         (with-temp-buffer (insert-file-contents cache) (buffer-string)) rsid)
+         (with-temp-buffer
+           (let ((coding-system-for-read 'utf-8))
+             (insert-file-contents cache))
+           (buffer-string)) rsid)
       (genetics--snpedia-confirm)
       (let ((text (genetics--snpedia-download rsid)))
         (let ((wikitext (genetics--snpedia-wikitext text rsid)))
           (make-directory (file-name-directory cache) t)
-          (with-temp-file cache
-            (let ((coding-system-for-write 'utf-8)) (insert text)))
+          (genetics--with-output-file cache (insert text))
           wikitext)))))
 
 (defun genetics--snpedia-field (wikitext name)

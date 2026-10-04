@@ -141,7 +141,7 @@ Pure twin of `genetics-source-genome-cli': nothing is executed.  The
 import is followed by `genome summary ID --format json' for the kit
 id it returns.  Interactively, show the command in the echo area."
   (interactive (list (read-file-name "Explain genome-cli import of: "
-                                     genetics-data-directory nil t)))
+                                     (genetics--prompt-directory) nil t)))
   (let ((cmd (genetics-genome-argv-string (genetics-genome-argv 'import file))))
     (when (called-interactively-p 'interactive)
       (message "%s" cmd))
@@ -153,7 +153,7 @@ id it returns.  Interactively, show the command in the echo area."
   "Parse genome/v1 envelope TEXT printed by ARGV; return the alist.
 Signal `genetics-genome-error' when TEXT is not a genome/v1 envelope."
   (let ((env (condition-case nil
-                 (json-parse-string (string-trim text)
+                 (genetics--json-parse (string-trim text)
                                     :object-type 'alist :array-type 'list
                                     :null-object nil :false-object :false)
                (json-error nil))))
@@ -408,7 +408,7 @@ OPs: `get' (RSID), `range' (CHROM START END), `map' (CHROM FN) and
 
 (defun genetics--genome-kits-for (file kits)
   "Entries of genome/v1 KITS envelope imported from FILE, newest first."
-  (sort (seq-filter (lambda (k) (equal (alist-get 'source_path k) file))
+  (sort (seq-filter (lambda (k) (genetics--same-file-p (alist-get 'source_path k) file))
                     (alist-get 'data kits))
         (lambda (a b) (string> (or (alist-get 'imported_at a) "")
                                (or (alist-get 'imported_at b) "")))))

@@ -19,7 +19,12 @@ VCF / VCF.gz). Everything is local; README.md is the full reference.
 ## Changing it
 
 - `make test`, `make compile` (warnings are errors) and `make checkdoc`
-  must pass (`make lint` runs the last two).
+  must pass (`make lint` runs the last two). Without make (Windows):
+  `emacs -Q --batch -l test/run-tests.el [test|compile|checkdoc|all]`.
+- Cross-platform (Linux, macOS, native Windows; CI matrix in
+  `.github/workflows/test.yml`): find programs with `executable-find`, run
+  them with argument lists (no shell), build paths with `expand-file-name`,
+  write data files with `genetics--with-output-file` (UTF-8, LF).
 - Fixtures in `test/fixtures/` are synthetic. Never read the real data
   directory (`genetics-data-directory`) from tests or code paths run in tests.
 - Errors: `define-error` under `genetics-error`; never message-and-return-nil.

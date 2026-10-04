@@ -53,7 +53,7 @@ and plist FILTERS (see `genetics-browse-rows') select the records."
   (let* ((ctx (genetics-export--context kit filters))
          (snps (genetics-export--snps (car ctx) (cdr ctx)))
          (annotations (genetics-annotations)))
-    (with-temp-file file
+    (genetics--with-output-file file
       (insert "RSID,CHROMOSOME,POSITION,RESULT,ZYGOSITY,GENE,REF,ALT\n")
       (dolist (s snps)
         (let ((ann (genetics-snp-annotation s (genetics-kit-build (car ctx))
@@ -77,26 +77,25 @@ Arguments FILE, KIT and FILTERS are as for `genetics-export-csv'."
   (let* ((ctx (genetics-export--context kit filters))
          (snps (genetics-export--snps (car ctx) (cdr ctx)))
          (annotations (genetics-annotations)))
-    (with-temp-file file
-      (let ((coding-system-for-write 'utf-8))
-        (insert
-         (json-serialize
-          (vconcat
-           (mapcar
-            (lambda (s)
-              (let ((ann (genetics-snp-annotation
-                          s (genetics-kit-build (car ctx)) annotations)))
-                `((rsid . ,(genetics-snp-rsid s))
-                  (chromosome . ,(genetics-snp-chrom s))
-                  (position . ,(genetics-snp-pos s))
-                  (genotype . ,(genetics-snp-genotype s))
-                  (zygosity . ,(symbol-name
-                                (genetics-zygosity (genetics-snp-genotype s))))
-                  (gene . ,(or (and ann (genetics-annotation-gene ann)) :null))
-                  (ref . ,(or (genetics-snp-ref s) :null))
-                  (alt . ,(or (genetics-snp-alt s) :null)))))
-            snps)))
-         "\n")))
+    (genetics--with-output-file file
+      (insert
+       (genetics--json-serialize
+        (vconcat
+         (mapcar
+          (lambda (s)
+            (let ((ann (genetics-snp-annotation
+                        s (genetics-kit-build (car ctx)) annotations)))
+              `((rsid . ,(genetics-snp-rsid s))
+                (chromosome . ,(genetics-snp-chrom s))
+                (position . ,(genetics-snp-pos s))
+                (genotype . ,(genetics-snp-genotype s))
+                (zygosity . ,(symbol-name
+                              (genetics-zygosity (genetics-snp-genotype s))))
+                (gene . ,(or (and ann (genetics-annotation-gene ann)) :null))
+                (ref . ,(or (genetics-snp-ref s) :null))
+                (alt . ,(or (genetics-snp-alt s) :null)))))
+          snps)))
+       "\n"))
     (length snps)))
 
 (provide 'genetics-export)

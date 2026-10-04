@@ -63,12 +63,19 @@
         (genetics-fastq-output-directory "/out/")
         (genetics-fastq-extra-args '("--threads" "8")))
     (should (equal (genetics-fastq-argv 'plan '("/r/a_R1.fq.gz" "/r/a_R2.fq.gz"))
-                   '("genome" "pipeline" "plan" "/r/a_R1.fq.gz" "/r/a_R2.fq.gz"
-                     "--build" "GRCh38" "--out" "/out/" "--threads" "8"
-                     "--format" "json")))
+                   (list "genome" "pipeline" "plan" (expand-file-name "/r/a_R1.fq.gz")
+                         (expand-file-name "/r/a_R2.fq.gz")
+                         "--build" "GRCh38" "--out" (expand-file-name "/out/")
+                         "--threads" "8" "--format" "json")))
     (should (equal (genetics-fastq-run-explain '("/r/a b.fq"))
-                   "genome pipeline run /r/a\\ b.fq --build GRCh38 --out /out/ --threads 8 --format json"))
-    (should (string-prefix-p "genome pipeline plan /r/x.fq"
+                   (format "genome pipeline run %s --build GRCh38 --out %s --threads 8 --format json"
+                           (shell-quote-argument (expand-file-name "/r/a b.fq"))
+                           (shell-quote-argument (expand-file-name "/out/")))))
+    (unless (eq system-type 'windows-nt)
+      (should (equal (genetics-fastq-run-explain '("/r/a b.fq"))
+                     "genome pipeline run /r/a\\ b.fq --build GRCh38 --out /out/ --threads 8 --format json")))
+    (should (string-prefix-p (concat "genome pipeline plan "
+                                     (shell-quote-argument (expand-file-name "/r/x.fq")))
                              (genetics-fastq-plan-explain '("/r/x.fq"))))
     (should-error (genetics-fastq-argv 'plan nil) :type 'genetics-file-error)
     (should-error (genetics-fastq-argv 'destroy '("/a.fq")) :type 'genetics-genome-error)))

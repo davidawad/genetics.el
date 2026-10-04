@@ -162,6 +162,43 @@
               (should (equal "--" (genetics-snp-genotype (genetics-kit-get kit "rs2"))))))
         (delete-file file)))))
 
+(defun genetics-parse-test--crlf-copy (name)
+  "Return a temp copy of fixture NAME with CRLF line endings."
+  (let ((file (make-temp-file "genetics-test-crlf-" nil
+                              (concat "." (file-name-extension name)))))
+    (with-temp-buffer
+      (set-buffer-multibyte nil)
+      (insert-file-contents-literally (genetics-test-fixture name))
+      (goto-char (point-min))
+      (while (search-forward "\n" nil t) (replace-match "\r\n" t t))
+      (let ((coding-system-for-write 'no-conversion))
+        (write-region nil nil file nil 'silent)))
+    file))
+
+(ert-deftest genetics-parse-test-crlf-fixtures ()
+  "Every format reads the same from CRLF (Windows) files, eager and lazy."
+  (genetics-test-with-env
+    (dolist (name '("23andme-sample.txt" "ancestry-sample.txt"
+                    "myheritage-sample.csv" "ftdna-sample.csv" "sample.vcf"))
+      (let ((file (genetics-parse-test--crlf-copy name))
+            (plain (genetics-parse-file (genetics-test-fixture name))))
+        (unwind-protect
+            (let ((kit (genetics-parse-file file)))
+              (should (eq (genetics-kit-format plain) (genetics-kit-format kit)))
+              (should (equal (genetics-kit-build plain) (genetics-kit-build kit)))
+              (should (equal (genetics-kit-sample plain) (genetics-kit-sample kit)))
+              (should (equal (genetics-test-snps plain) (genetics-test-snps kit)))
+              (when (eq 'vcf (genetics-kit-format plain))
+                (let* ((genetics-vcf-eager-limit 10)
+                       (lazy (genetics-parse-file file)))
+                  (should (genetics-kit-lazy lazy))
+                  (should (equal (genetics-kit-sample plain) (genetics-kit-sample lazy)))
+                  (should (equal (genetics-kit-build plain) (genetics-kit-build lazy)))
+                  (maphash (lambda (id snp)
+                             (should (equal snp (genetics-kit-get lazy id))))
+                           (genetics-kit-table plain)))))
+          (delete-file file))))))
+
 (ert-deftest genetics-parse-test-errors ()
   (genetics-test-with-env
     (let ((file (make-temp-file "genetics-test-" nil ".txt")))

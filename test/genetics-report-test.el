@@ -130,7 +130,7 @@
             (should (= 13 (genetics-export-json file kit)))
             (let* ((data (with-temp-buffer
                            (insert-file-contents file)
-                           (json-parse-buffer :object-type 'alist :array-type 'list :null-object nil)))
+                           (genetics--json-parse (buffer-string) :object-type 'alist :array-type 'list :null-object nil)))
                    (row (cl-find "rs9999" data :key (lambda (r) (alist-get 'rsid r)) :test #'equal)))
               (should (= 13 (length data)))
               (should (equal "GT" (alist-get 'genotype row)))
@@ -160,6 +160,61 @@
             (genetics-browse-clear-filters)
             (should (= 33 (genetics-browse-export-csv csv))))
         (delete-file csv) (delete-file json)))))
+
+(ert-deftest genetics-json-fallback-matches-native ()
+  "Without native JSON (Emacs 29 sans libjansson) json.el gives the same results."
+  (skip-unless (genetics--native-json-p))
+  (genetics-test-with-env
+    (let* ((kit (genetics-test-load "sample.vcf"))
+           (dir (genetics-test-temp-dir))
+           (native (expand-file-name "native.json" dir))
+           (fallback (expand-file-name "fallback.json" dir))
+           (text "{\"a\":[1,null,false,true],\"b\":{\"c\":\"\u00e9\"}}")
+           (args '(:object-type alist :array-type list :null-object nil
+                                :false-object :false))
+           (curated (expand-file-name "annotations/genetics-curated.json"
+                                      (genetics-test-root)))
+           (ann (genetics-load-annotation-file curated)))
+      (should ann)
+      (genetics-export-json native kit)
+      (let ((parsed (apply #'genetics--json-parse text args)))
+        (cl-letf (((symbol-function 'json-available-p) (lambda () nil)))
+          (should-not (genetics--native-json-p))
+          (should (equal parsed (apply #'genetics--json-parse text args)))
+          (should (equal (genetics--json-parse "[1,2]") [1 2]))
+          (should-error (genetics--json-parse "{oops") :type 'json-error)
+          (should (equal ann (genetics-load-annotation-file curated)))
+          (genetics-export-json fallback kit)))
+      (should (equal (with-temp-buffer (insert-file-contents-literally native)
+                                       (buffer-string))
+                     (with-temp-buffer (insert-file-contents-literally fallback)
+                                       (buffer-string)))))))
+
+(ert-deftest genetics-export-test-files-are-utf8-lf ()
+  "Written files are UTF-8 with LF even where the default coding is DOS."
+  (genetics-test-with-env
+    (let* ((kit (genetics-test-load "23andme-sample.txt"))
+           (dir (genetics-test-temp-dir))
+           (old (default-value 'buffer-file-coding-system)))
+      (unwind-protect
+          (progn
+            (setq-default buffer-file-coding-system 'utf-8-dos)
+            (genetics-export-csv (expand-file-name "k.csv" dir) kit)
+            (genetics-export-json (expand-file-name "k.json" dir) kit)
+            (genetics-report-write kit (expand-file-name "k.org" dir))
+            (let ((genetics-use-cache t))
+              (genetics--cache-write kit (genetics-test-fixture "23andme-sample.txt"))
+              (should (file-exists-p (genetics--cache-file
+                                      (genetics-test-fixture "23andme-sample.txt")))))
+            (dolist (f (append (mapcar (lambda (n) (expand-file-name n dir))
+                                       '("k.csv" "k.json" "k.org"))
+                               (directory-files genetics-cache-directory t "\\.eld\\'")))
+              (with-temp-buffer
+                (set-buffer-multibyte nil)
+                (insert-file-contents-literally f)
+                (should (> (buffer-size) 0))
+                (should-not (search-forward "\r" nil t)))))
+        (setq-default buffer-file-coding-system old)))))
 
 (provide 'genetics-report-test)
 ;;; genetics-report-test.el ends here
