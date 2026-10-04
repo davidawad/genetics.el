@@ -167,7 +167,7 @@ number of explicit homozygous-reference calls.  See
 
 (defun genetics--hom-ref-gt-p (line sample-index)
   "Return non-nil if VCF LINE has a homozygous-reference GT in SAMPLE-INDEX."
-  (let* ((f (split-string line "\t"))
+  (let* ((f (split-string (string-trim-right line "\r") "\t"))
          (fmt (nth 8 f)) (sample (nth sample-index f))
          (i (and fmt sample
                  (cl-position "GT" (split-string fmt ":") :test #'equal)))

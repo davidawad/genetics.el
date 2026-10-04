@@ -226,6 +226,21 @@ FORMAT-FIELD is the FORMAT column (default GT, sample value is GT)."
                                   (genetics-parse-file file :lazy lazy)))))
         (delete-file file)))))
 
+(ert-deftest genetics-wgs-test-hom-ref-seen-with-crlf ()
+  (genetics-test-with-env
+    (let ((genetics-wgs-min-records 2)
+          ;; a CRLF file (Windows tools, git autocrlf): GT is the last field
+          (file (let ((coding-system-for-write 'utf-8-dos))
+                  (genetics-wgs-test--write-vcf
+                   '((1 100 "A" "G" "10,0:0/0") (1 200 "C" "T" "5,5:0/1")
+                     (1 300 "G" "A" "0,9:1/1"))
+                   "AD:GT"))))
+      (unwind-protect
+          (dolist (lazy '(nil t))
+            (should (eq 'unknown (genetics-kit-ref-calls
+                                  (genetics-parse-file file :lazy lazy)))))
+        (delete-file file)))))
+
 (ert-deftest genetics-wgs-test-no-annotation-files ()
   (genetics-test-with-env
     (let ((genetics-annotation-files nil)

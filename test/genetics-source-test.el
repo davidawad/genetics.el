@@ -35,7 +35,7 @@
     ;; the explain twin is pure and exact
     (should (equal (genetics-source-genome-cli-explain "/data/my kit.txt")
                    (concat "genome import "
-                           (shell-quote-argument (expand-file-name "/data/my kit.txt"))
+                           (genetics--quote-arg (expand-file-name "/data/my kit.txt"))
                            " --format json")))
     (unless (eq system-type 'windows-nt)
       (should (equal (genetics-source-genome-cli-explain "/data/my kit.txt")
