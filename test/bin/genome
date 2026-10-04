@@ -1,0 +1,54 @@
+#!/bin/sh
+# Fake genome-cli for the genetics.el tests.  Replays recorded genome/v1
+# JSON from test/fixtures/genome (synthetic data only) and appends each
+# argv, one line per call, to $GENETICS_FAKE_GENOME_LOG when set.
+# @FIXTURES@ in a reply is replaced by the absolute test/fixtures path.
+fixtures=$(cd "$(dirname "$0")/../fixtures" && pwd)
+dir="$fixtures/genome"
+[ -n "$GENETICS_FAKE_GENOME_LOG" ] && printf '%s\n' "$*" >> "$GENETICS_FAKE_GENOME_LOG"
+reply() { sed "s|@FIXTURES@|$fixtures|g" "$dir/$1"; exit "${2:-0}"; }
+cmd=$1; shift
+# Mirror the real CLI: kit ids are positional, there is no --kit flag.
+for a in "$@"; do
+  [ "$a" = --kit ] && { echo "error: unexpected argument '--kit' found" >&2; exit 2; }
+done
+case "$cmd" in
+  import)
+    case "$1" in
+      *missing*) reply error-not-found.json 2 ;;
+      *garbage*) echo "panic: not json" >&2; echo "garbage"; exit 101 ;;
+      *second*) reply kits-k2.json ;;
+      *) reply kits.json ;;
+    esac ;;
+  summary) reply summary.json ;;
+  lookup)
+    rsid=
+    while [ $# -gt 0 ]; do [ "$1" = --rsid ] && rsid=$2; shift; done
+    [ -f "$dir/lookup-$rsid.json" ] && reply "lookup-$rsid.json"
+    reply lookup-none.json ;;
+  export)
+    chrom= start= offset=0
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --region) chrom=${2%%:*}; case "$2" in *:*) r=${2#*:}; start=${r%%-*} ;; esac ;;
+        --offset) offset=$2 ;;
+      esac
+      shift
+    done
+    if [ -n "$start" ]; then f="query-$chrom-at-$start.json"; else f="query-$chrom-$offset.json"; fi
+    [ -f "$dir/$f" ] && reply "$f"
+    reply query-empty.json ;;
+  compare) reply compare.json ;;
+  pipeline)
+    case "$1" in
+      plan) reply pipeline-plan.json ;;
+      run)
+        echo "[1/3] align: bwa-mem2 (fake)" >&2
+        echo "[2/3] call: deepvariant (fake)" >&2
+        echo "[3/3] normalize: bcftools (fake)" >&2
+        case "$*" in *fail*) echo '{"schema":"genome/v1","ok":false,"error":{"code":"step_failed","message":"align failed"}}'; exit 3 ;; esac
+        reply pipeline-run.json ;;
+    esac ;;
+esac
+echo '{"schema":"genome/v1","ok":false,"error":{"code":"usage","message":"unknown command"}}'
+exit 2
