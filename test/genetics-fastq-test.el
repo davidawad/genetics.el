@@ -139,9 +139,9 @@
                                   (genetics-test-buffer-text "*genetics-fastq-run*"))))))))
 
 (ert-deftest genetics-privacy-test-local-processes-only-where-expected ()
-  "Only gzip (parse) and genome-cli (source, fastq) are run, all locally."
+  "Only gzip (decompression) and genome-cli (source, fastq) are run, all locally."
   (let ((rx "call-process\\|process-file\\|compilation-start\\|shell-command")
-        (allowed '("genetics-parse.el" "genetics-source.el" "genetics-fastq.el")))
+        (allowed '("genetics-gzip.el" "genetics-source.el" "genetics-fastq.el")))
     (dolist (f (directory-files (genetics-test-root) t "\\`genetics.*\\.el\\'"))
       (unless (member (file-name-nondirectory f) allowed)
         (should-not (string-match-p rx (with-temp-buffer (insert-file-contents f)

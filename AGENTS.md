@@ -7,10 +7,14 @@ VCF / VCF.gz). Everything is local; README.md is the full reference.
 ## Layout
 
 - `genetics.el` — entry point (`genetics-open`, summary buffer).
-- `genetics-core.el` — customization, errors, structs, shared helpers.
-- `genetics-parse.el` — format detection, parsers, VCF offset index, cache.
+- `genetics-base.el` — customization, errors, JSON and output-file helpers.
+- `genetics-core.el` — structs, chromosome/genotype helpers, kit access, registry.
+- `genetics-detect.el` — format, build and reference-call detection, strand notes.
+- `genetics-gzip.el` — gzip/BGZF decompression (gzip executable or zlib).
+- `genetics-parse.el` — parsers, VCF offset index, cache, `genetics-parse-file`.
 - `genetics-stats.el` — stats, sex inference, caveats text.
-- `genetics-annotate.el` — annotation files (JSON/Org), risk-allele logic, APOE.
+- `genetics-catalog.el` — annotation files (JSON/Org): loading, cache, lookup.
+- `genetics-annotate.el` — curated-site resolution, risk-allele logic, APOE.
 - `genetics-browse.el`, `-lookup.el`, `-report.el`, `-compare.el`, `-export.el`.
 - `genetics-org.el` — Org dynamic blocks (genetics-summary, -hits, -apoe).
 - `examples/` — sample Org report, report and screenshot regeneration scripts.
