@@ -12,6 +12,8 @@ VCF / VCF.gz). Everything is local; README.md is the full reference.
 - `genetics-stats.el` — stats, sex inference, caveats text.
 - `genetics-annotate.el` — annotation files (JSON/Org), risk-allele logic, APOE.
 - `genetics-browse.el`, `-lookup.el`, `-report.el`, `-compare.el`, `-export.el`.
+- `genetics-org.el` — Org dynamic blocks (genetics-summary, -hits, -apoe).
+- `examples/` — sample Org report, report and screenshot regeneration scripts.
 - `genetics-snpedia.el` — the ONLY file allowed to touch the network.
 
 ## Changing it

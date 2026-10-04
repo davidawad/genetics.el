@@ -162,6 +162,9 @@ when more records matched than were returned."
         [("rsid" 14 t) ("chrom" 6 t) ("position" 11 genetics-browse--pos<)
          ("genotype" 10 t) ("zygosity" 13 t) ("gene" 14 t)])
   (setq tabulated-list-padding 1)
+  ;; The header line shows the filters, so the column headings go in the
+  ;; buffer's first line instead.
+  (setq tabulated-list-use-header-line nil)
   (setq tabulated-list-entries #'genetics-browse--entries)
   (tabulated-list-init-header))
 

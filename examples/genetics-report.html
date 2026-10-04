@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Genetics report (synthetic sample)</title>
+<meta name="author" content="genetics.el" />
+<meta name="generator" content="Org Mode" />
+<style type="text/css">
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { }
+</style>
+<style>body{max-width:60rem;margin:2rem auto;font-family:system-ui,sans-serif;line-height:1.45;padding:0 1rem} table{border-collapse:collapse;font-size:.9rem} th,td{border:1px solid #ccc;padding:.25rem .5rem;vertical-align:top} th{background:#f2f2f2} dt{font-weight:600}</style>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Genetics report (synthetic sample)</h1>
+<p>
+This document is built from the <b>synthetic</b> 23andMe-format fixture
+<a href="../test/fixtures/23andme-sample.txt">test/fixtures/23andme-sample.txt</a> (not a real person's genotypes)
+with the three dynamic blocks of <code>genetics-org.el</code>.  Update every block
+with <code>C-u C-c C-x C-u</code>, or regenerate this file and its HTML export with
+<code>emacs -Q --batch -l examples/regenerate-report.el</code>.
+</p>
+<div id="outline-container-org795f9d6" class="outline-2">
+<h2 id="org795f9d6">Kit summary</h2>
+<div class="outline-text-2" id="text-org795f9d6">
+<dl class="org-dl">
+<dt>Kit</dt><dd>23andme-sample</dd>
+<dt>File</dt><dd><code>~/src/genetics-el/test/fixtures/23andme-sample.txt</code></dd>
+<dt>Format</dt><dd>23andMe</dd>
+<dt>Source</dt><dd>Emacs Lisp parser</dd>
+<dt>Assay</dt><dd>array, every assayed site listed</dd>
+<dt>Build</dt><dd>GRCh37</dd>
+<dt>Records</dt><dd>33</dd>
+<dt>No-call rate</dt><dd>18.18% (6 no-calls)</dd>
+<dt>Inferred sex</dt><dd>female (non-PAR X heterozygosity 40.00%, Y called 0%)</dd>
+<dt>Caveats</dt><dd><ul class="org-ul">
+<li>23andMe reports genotypes on the + (forward) strand of GRCh37; no liftover is performed.</li>
+<li>Positions are on GRCh37; they cannot be compared to data on another build without liftover, which this package does not do.</li>
+<li>The 23andMe chip version could not be determined.</li>
+<li>A genotyping array reads a fixed subset of known sites (about 0.02% of the genome); a site that is not on the chip is simply absent.</li>
+<li>Palindromic SNPs (A/T and C/G) cannot have their strand verified from the genotype alone.</li>
+</ul></dd>
+</dl>
+
+<p>
+<i>Informational only, not medical advice.</i> Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+</p>
+</div>
+</div>
+<div id="outline-container-orge966375" class="outline-2">
+<h2 id="orge966375">Curated findings</h2>
+<div class="outline-text-2" id="text-orge966375">
+<p>
+All curated annotation hits (the effect column is shrunk in Emacs by
+<code>:effect-width</code> and <code>#+STARTUP: shrink</code>; the export shows it in full):
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">rsid</th>
+<th scope="col" class="org-left">gene</th>
+<th scope="col" class="org-left">genotype</th>
+<th scope="col" class="org-left">risk-allele copies</th>
+<th scope="col" class="org-left">call source</th>
+<th scope="col" class="org-right">magnitude</th>
+<th scope="col" class="org-left">effect</th>
+<th scope="col" class="org-left">source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">rs429358</td>
+<td class="org-left">APOE</td>
+<td class="org-left">CT</td>
+<td class="org-left">1 (C)</td>
+<td class="org-left">observed</td>
+<td class="org-right">3</td>
+<td class="org-left">Defines the APOE e4 allele together with rs7412 (e4 = C at rs429358 plus C at rs7412).</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs429358">source</a></td>
+</tr>
+
+<tr>
+<td class="org-left">rs7412</td>
+<td class="org-left">APOE</td>
+<td class="org-left">CT</td>
+<td class="org-left">1 (T)</td>
+<td class="org-left">observed</td>
+<td class="org-right">2</td>
+<td class="org-left">Defines the APOE e2 allele together with rs429358 (e2 = T at rs429358 plus T at rs7412).</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs7412">source</a></td>
+</tr>
+
+<tr>
+<td class="org-left">rs4244285</td>
+<td class="org-left">CYP2C19</td>
+<td class="org-left">AG</td>
+<td class="org-left">1 (A)</td>
+<td class="org-left">observed</td>
+<td class="org-right">3</td>
+<td class="org-left">CYP2C19*2 (c.681G&gt;A) is a loss-of-function allele that reduces metabolism of drugs such as clopidogrel.</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs4244285">source</a></td>
+</tr>
+
+<tr>
+<td class="org-left">rs6025</td>
+<td class="org-left">F5</td>
+<td class="org-left">CC</td>
+<td class="org-left">0 (T)</td>
+<td class="org-left">observed</td>
+<td class="org-right">4</td>
+<td class="org-left">Factor V Leiden (R506Q).</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs6025">source</a></td>
+</tr>
+
+<tr>
+<td class="org-left">rs1800562</td>
+<td class="org-left">HFE</td>
+<td class="org-left">GG</td>
+<td class="org-left">0 (A)</td>
+<td class="org-left">observed</td>
+<td class="org-right">4</td>
+<td class="org-left">HFE C282Y.</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs1800562">source</a></td>
+</tr>
+
+<tr>
+<td class="org-left">rs4988235</td>
+<td class="org-left">MCM6/LCT</td>
+<td class="org-left">GG</td>
+<td class="org-left">0 (A)</td>
+<td class="org-left">observed</td>
+<td class="org-right">1</td>
+<td class="org-left">LCT -13910 C/T.</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs4988235">source</a></td>
+</tr>
+
+<tr>
+<td class="org-left">rs1801131</td>
+<td class="org-left">MTHFR</td>
+<td class="org-left">TT</td>
+<td class="org-left">0 (G)</td>
+<td class="org-left">observed</td>
+<td class="org-right">1</td>
+<td class="org-left">MTHFR A1298C (E429A).</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs1801131">source</a></td>
+</tr>
+
+<tr>
+<td class="org-left">rs1801133</td>
+<td class="org-left">MTHFR</td>
+<td class="org-left">AG</td>
+<td class="org-left">1 (A)</td>
+<td class="org-left">observed</td>
+<td class="org-right">2</td>
+<td class="org-left">MTHFR C677T (A222V).</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs1801133">source</a></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Risk alleles are on the + strand; a genotype is never flipped automatically.
+</p>
+
+<p>
+<i>Informational only, not medical advice.</i> Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+</p>
+
+<p>
+Only magnitude 3 and above, in two genes:
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">rsid</th>
+<th scope="col" class="org-left">gene</th>
+<th scope="col" class="org-left">genotype</th>
+<th scope="col" class="org-left">risk-allele copies</th>
+<th scope="col" class="org-left">call source</th>
+<th scope="col" class="org-right">magnitude</th>
+<th scope="col" class="org-left">effect</th>
+<th scope="col" class="org-left">source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">rs6025</td>
+<td class="org-left">F5</td>
+<td class="org-left">CC</td>
+<td class="org-left">0 (T)</td>
+<td class="org-left">observed</td>
+<td class="org-right">4</td>
+<td class="org-left">Factor V Leiden (R506Q).</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs6025">source</a></td>
+</tr>
+
+<tr>
+<td class="org-left">rs1800562</td>
+<td class="org-left">HFE</td>
+<td class="org-left">GG</td>
+<td class="org-left">0 (A)</td>
+<td class="org-left">observed</td>
+<td class="org-right">4</td>
+<td class="org-left">HFE C282Y.</td>
+<td class="org-left"><a href="https://www.snpedia.com/index.php/Rs1800562">source</a></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Risk alleles are on the + strand; a genotype is never flipped automatically.
+</p>
+
+<p>
+Filter: magnitude &gt;= 3; genes F5, HFE.
+</p>
+
+<p>
+<i>Informational only, not medical advice.</i> Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+</p>
+</div>
+</div>
+<div id="outline-container-orgc558a63" class="outline-2">
+<h2 id="orgc558a63">APOE</h2>
+<div class="outline-text-2" id="text-orgc558a63">
+<p>
+<b>APOE: e2/e4</b> (status: ambiguous). e2/e4 (most likely) or e1/e3 (very rare): the phase of a double heterozygote cannot be resolved from unphased genotypes, so e2/e4 is assumed. Calls: rs429358 CT, rs7412 CT. Method: rs429358 T/C and rs7412 C/T read on the + strand (e2 = T+T, e3 = T+C, e4 = C+C); genotypes are never flipped automatically, and an A/G call is reported as a possible strand flip. APOE e4 is a risk factor, not a diagnosis; most carriers never develop Alzheimer's disease.
+</p>
+
+<p>
+<i>Informational only, not medical advice.</i> Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+</p>
+</div>
+</div>
+<div id="outline-container-org280eab7" class="outline-2">
+<h2 id="org280eab7">A block that fails</h2>
+<div class="outline-text-2" id="text-org280eab7">
+<p>
+A block that cannot run is written as Org comments (hidden from the
+export) with what to do, and the rest of the document is untouched:
+</p>
+
+<p>
+<i>Informational only, not medical advice.</i> Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+</p>
+</div>
+</div>
+</div>
+</body>
+</html>

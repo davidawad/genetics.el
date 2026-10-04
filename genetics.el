@@ -24,6 +24,8 @@
 ;;   M-x genetics-browse    filterable table of records
 ;;   M-x genetics-lookup    one rsid across all loaded kits
 ;;   M-x genetics-report    Org report of annotated findings and APOE
+;;   genetics-summary, genetics-hits, genetics-apoe
+;;                          Org dynamic blocks (genetics-org.el)
 ;;   M-x genetics-compare   concordance between two kits
 ;;   M-x genetics-fastq-plan / genetics-fastq-run
 ;;                          FASTQ reads -> VCF through `genome pipeline'
@@ -49,6 +51,7 @@
 (require 'genetics-browse)
 (require 'genetics-lookup)
 (require 'genetics-report)
+(require 'genetics-org)
 (require 'genetics-compare)
 (require 'genetics-export)
 
