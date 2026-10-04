@@ -118,9 +118,11 @@ BUILD, CHROM, POS and REF are the raw values; POS may be a string."
   "Return the annotations in JSON FILE."
   (let ((data (condition-case err
                   (with-temp-buffer
-                    (insert-file-contents file)
-                    (json-parse-buffer :object-type 'alist :array-type 'list
-                                       :null-object nil :false-object nil))
+                    (let ((coding-system-for-read 'utf-8))
+                      (insert-file-contents file))
+                    (genetics--json-parse (buffer-string)
+                                          :object-type 'alist :array-type 'list
+                                          :null-object nil :false-object nil))
                 (json-error
                  (genetics--ann-error file "invalid JSON (%s)"
                                       (error-message-string err))))))
@@ -164,7 +166,8 @@ BUILD, CHROM, POS and REF are the raw values; POS may be a string."
 (defun genetics--load-annotation-org (file)
   "Return the annotations in Org FILE (headings with property drawers)."
   (with-temp-buffer
-    (insert-file-contents file)
+    (let ((coding-system-for-read 'utf-8))
+      (insert-file-contents file))
     (goto-char (point-min))
     (let ((result nil) (props nil) (body nil) (in-drawer nil) (heading nil))
       (cl-flet ((flush ()

@@ -200,8 +200,36 @@
         (should (string-match-p "REF/ALT" text))))))
 
 (ert-deftest genetics-summary-test-data-directory-default ()
-  (should (equal "~/Documents/Genetics/"
-                 (default-value 'genetics-data-directory))))
+  (let ((mac "~/Documents/Genetics/"))
+    (should (equal mac genetics--macos-data-directory))
+    (cl-letf (((symbol-function 'file-directory-p) (lambda (_) t)))
+      (let ((system-type 'darwin))
+        (should (equal mac (genetics--default-data-directory))))
+      (dolist (os '(gnu/linux windows-nt))
+        (let ((system-type os))
+          (should (equal "~/" (genetics--default-data-directory))))))
+    (cl-letf (((symbol-function 'file-directory-p) (lambda (_) nil)))
+      (let ((system-type 'darwin))
+        (should (equal "~/" (genetics--default-data-directory)))))))
+
+(ert-deftest genetics-core-test-same-file-p ()
+  (should (genetics--same-file-p "/a/b/kit.txt" "/a/b/../b/kit.txt"))
+  (should-not (genetics--same-file-p "/a/b/kit.txt" nil))
+  (should-not (genetics--same-file-p "/a/b/kit.txt" "/a/b/kit2.txt"))
+  (let ((system-type 'gnu/linux))
+    (should-not (genetics--same-file-p "/a/B/Kit.txt" "/a/b/kit.txt")))
+  (let ((system-type 'windows-nt))
+    (should (genetics--same-file-p "/a/B/Kit.txt" "/a/b/kit.txt"))))
+
+(ert-deftest genetics-summary-test-prompt-directory-fallback ()
+  (let ((default-directory (file-name-as-directory temporary-file-directory)))
+    (let ((genetics-data-directory "/no/such/genetics/dir/"))
+      (should (equal default-directory (genetics--prompt-directory))))
+    (let ((genetics-data-directory nil))
+      (should (equal default-directory (genetics--prompt-directory))))
+    (let ((genetics-data-directory (directory-file-name temporary-file-directory)))
+      (should (equal (file-name-as-directory temporary-file-directory)
+                     (genetics--prompt-directory))))))
 
 (provide 'genetics-browse-test)
 ;;; genetics-browse-test.el ends here

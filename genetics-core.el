@@ -23,6 +23,13 @@
 
 (require 'cl-lib)
 (require 'subr-x)
+(require 'json)
+
+;; Defined only in builds with native JSON (libjansson, on Emacs 29); each
+;; use is guarded, so builds without it still compile clean.
+(declare-function json-available-p "json.c" ())
+(declare-function json-parse-string "json.c" (string &rest args))
+(declare-function json-serialize "json.c" (object &rest args))
 
 (defgroup genetics nil
   "Read and explore consumer genetics raw-data files."
@@ -35,14 +42,43 @@
 
 ;;;; Customization
 
-(defcustom genetics-data-directory
+(defconst genetics--macos-data-directory
   "~/Documents/Genetics/"
-  "Default directory offered when prompting for a raw-data file."
+  "The author's macOS Google Drive folder, used as the default when present.")
+
+(defun genetics--default-data-directory ()
+  "Return the default for `genetics-data-directory' on this system.
+That is the macOS Google Drive folder when running on macOS and it
+exists, else the home directory."
+  (if (and (eq system-type 'darwin)
+           (file-directory-p genetics--macos-data-directory))
+      genetics--macos-data-directory
+    "~/"))
+
+(defcustom genetics-data-directory (genetics--default-data-directory)
+  "Default directory offered when prompting for a raw-data file.
+When it does not exist (a configuration shared between machines, say)
+prompts start in `default-directory' instead."
   :type 'directory)
+
+(defun genetics--prompt-directory ()
+  "Return `genetics-data-directory' if it exists, else `default-directory'."
+  (if (and (stringp genetics-data-directory)
+           (file-directory-p genetics-data-directory))
+      (file-name-as-directory genetics-data-directory)
+    default-directory))
 
 (defcustom genetics-cache-directory (locate-user-emacs-file "genetics-cache/")
   "Directory for parse caches, decompressed VCFs and SNPedia answers."
   :type 'directory)
+
+(defcustom genetics-gzip-program "gzip"
+  "Name or path of the gzip executable used to read .gz files.
+It is looked up with `executable-find'.  When it is nil or not found,
+.gz files are decompressed with Emacs' built-in zlib support instead
+\(see `zlib-available-p'), which reads the whole file into memory."
+  :type '(choice (string :tag "Executable")
+                 (const :tag "Always use Emacs' zlib" nil)))
 
 (defcustom genetics-use-cache t
   "Non-nil means cache parsed kits on disk as `.eld' files."
@@ -95,7 +131,7 @@ the file be shown as inferred homozygous reference."
   'genetics-error)
 (define-error 'genetics-parse-error "Cannot parse genetics data"
   'genetics-error)
-(define-error 'genetics-gzip-error "Cannot decompress with gzip"
+(define-error 'genetics-gzip-error "Cannot decompress gzip file"
   'genetics-error)
 (define-error 'genetics-unsupported-file
   "Raw reads cannot be opened as genotypes" 'genetics-error)
@@ -113,6 +149,45 @@ the file be shown as inferred homozygous reference."
   'genetics-snpedia-error)
 (define-error 'genetics-snpedia-declined "SNPedia lookup not confirmed"
   'genetics-snpedia-error)
+
+(defun genetics--native-json-p ()
+  "Return non-nil if Emacs has native JSON (always on 30, libjansson on 29)."
+  (and (fboundp 'json-available-p) (json-available-p)))
+
+(defun genetics--json-parse (string &rest args)
+  "Parse JSON STRING like `json-parse-string' with keyword ARGS.
+Uses native JSON when available, else json.el, so Emacs 29 builds
+without libjansson work too.  Errors are `json-error' either way."
+  (if (genetics--native-json-p)
+      (apply #'json-parse-string string args)
+    (let ((json-object-type (pcase (plist-get args :object-type)
+                              ('alist 'alist) ('plist 'plist) (_ 'hash-table)))
+          (json-array-type (if (eq (plist-get args :array-type) 'list) 'list 'vector))
+          (json-key-type nil)
+          (json-null (if (plist-member args :null-object)
+                         (plist-get args :null-object)
+                       :null))
+          (json-false (if (plist-member args :false-object)
+                          (plist-get args :false-object)
+                        :false)))
+      (json-read-from-string string))))
+
+(defun genetics--json-serialize (object)
+  "Return OBJECT as a JSON string like `json-serialize' (:null, :false)."
+  (if (genetics--native-json-p)
+      (json-serialize object)
+    (let ((json-null :null) (json-false :false)
+          (json-encoding-pretty-print nil))
+      (json-encode object))))
+
+(defmacro genetics--with-output-file (file &rest body)
+  "Like `with-temp-file' on FILE with BODY, but always write UTF-8 with LF.
+Data files are byte-for-byte the same on every OS (no CRLF, no locale
+coding on Windows)."
+  (declare (indent 1) (debug t))
+  `(with-temp-file ,file
+     (setq buffer-file-coding-system 'utf-8-unix)
+     ,@body))
 
 (defun genetics--error (type fmt &rest args)
   "Signal error TYPE with a message built from FMT and ARGS."
@@ -478,11 +553,23 @@ A kit loaded from FILE is being replaced and does not count."
       (setq n (1+ n) candidate (format "%s<%d>" name n)))
     candidate))
 
+(defun genetics--same-file-p (a b)
+  "Return non-nil if file names A and B (strings or nil) name the same file.
+Both are expanded first, which also turns Windows `\\' separators into
+`/'; on Windows, whose file systems ignore case, so does the comparison."
+  (or (equal a b)
+      (and (stringp a) (stringp b)
+           (let ((a (expand-file-name a)) (b (expand-file-name b)))
+             (or (string= a b)
+                 (and (memq system-type '(windows-nt ms-dos cygwin))
+                      (string= (downcase a) (downcase b))))))))
+
 (defun genetics-register-kit (kit)
   "Add KIT to `genetics-loaded-kits' (replacing one for the same file)."
   (setq genetics-loaded-kits
         (cons kit (cl-remove (genetics-kit-file kit) genetics-loaded-kits
-                             :key #'genetics-kit-file :test #'equal)))
+                             :key #'genetics-kit-file
+                             :test #'genetics--same-file-p)))
   kit)
 
 (defun genetics-find-kit (kit-or-name)

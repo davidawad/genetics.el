@@ -139,7 +139,7 @@ DIR is the document's directory (default: the fixtures directory)."
       (should (string-match-p "Informational only, not medical advice" text)))
     ;; missing file
     (let ((text (genetics-org-test--block "genetics-hits" '(:file "/nonexistent/kit.txt"))))
-      (should (string-match-p "\\`# genetics-hits failed: .*Cannot read /nonexistent/kit.txt" text))
+      (should (string-match-p "\\`# genetics-hits failed: .*Cannot read .*/nonexistent/kit.txt" text))
       (should (string-match-p "^# What to do: Check that :file" text)))
     ;; unknown kit name; the explain twin predicts the failure
     (should (string-match-p "^# genetics-apoe failed: .*No loaded kit named \"nope\""

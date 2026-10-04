@@ -51,18 +51,39 @@
   (or genetics-test--temp-dir
       (setq genetics-test--temp-dir (make-temp-file "genetics-test-dir" t))))
 
+(defun genetics-test-sh ()
+  "Return a POSIX sh to run the fake genome-cli with, or nil.
+On Windows that is Git for Windows' (or MSYS2's) sh.exe."
+  (or (executable-find "sh")
+      (and (eq system-type 'windows-nt)
+           (seq-find #'file-executable-p
+                     (mapcar (lambda (d) (expand-file-name "Git/bin/sh.exe" d))
+                             (delq nil (list (getenv "ProgramFiles")
+                                             (getenv "ProgramW6432")
+                                             "C:/Program Files")))))))
+
 (defun genetics-test-fake-genome ()
-  "Return the path of the fake genome-cli executable (test/bin/genome)."
-  (expand-file-name "bin/genome" genetics-test--dir))
+  "Return the path of the fake genome-cli executable (test/bin/genome).
+On Windows it is the genome.cmd shim, which runs the script with sh."
+  (expand-file-name (if (eq system-type 'windows-nt) "bin/genome.cmd" "bin/genome")
+                    genetics-test--dir))
 
 (defmacro genetics-test-with-fake-genome (log &rest body)
   "Run BODY with genome-cli replaced by the fake; bind LOG to its argv log.
 LOG is a function of no arguments returning the logged argv lines."
   (declare (indent 1))
   (let ((file (make-symbol "file")))
-    `(let* ((,file (make-temp-file "genetics-genome-log"))
-            (process-environment (cons (concat "GENETICS_FAKE_GENOME_LOG=" ,file)
-                                       process-environment))
+    `(let* ((_ (unless (genetics-test-sh)
+                 (ert-skip "No sh to run the fake genome-cli")))
+            (,file (make-temp-file "genetics-genome-log"))
+            (process-environment
+             (append (list (concat "GENETICS_FAKE_GENOME_LOG=" ,file)
+                           (concat "GENETICS_FAKE_GENOME_SH="
+                                   (convert-standard-filename (genetics-test-sh)))
+                           (concat "GENETICS_FAKE_GENOME_FIXTURES="
+                                   (directory-file-name
+                                    (expand-file-name "fixtures" genetics-test--dir))))
+                     process-environment))
             (genetics-genome-executable (genetics-test-fake-genome))
             (genetics-source-function #'genetics-source-genome-cli)
             (,log (lambda ()
@@ -100,8 +121,10 @@ BUILD-LINE replaces the default build comment."
 
 (defun genetics-test-gzip (src)
   "Return the path of a gzip copy of file SRC (temp file)."
+  (unless (executable-find "gzip") (ert-skip "gzip is not installed"))
   (let ((out (make-temp-file "genetics-test-" nil ".vcf.gz")))
-    (should (eq 0 (call-process "gzip" nil (list :file out) nil "-c" src)))
+    (should (eq 0 (call-process (executable-find "gzip") nil (list :file out)
+                                nil "-c" src)))
     out))
 
 (defun genetics-test-snps (kit)

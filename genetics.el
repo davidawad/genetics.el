@@ -199,7 +199,7 @@ Lisp parser).  Returns the kit.  FASTQ and BAM/CRAM files hold reads,
 not genotypes: they are explained in a buffer instead, and nil is
 returned."
   (interactive
-   (list (read-file-name "Genetics file: " genetics-data-directory nil t)))
+   (list (read-file-name "Genetics file: " (genetics--prompt-directory) nil t)))
   (let ((raw (genetics--raw-reads-format file)))
     (if raw
         (progn (genetics--show-unsupported file raw) nil)

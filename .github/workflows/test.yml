@@ -1,0 +1,54 @@
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Emacs ${{ matrix.emacs }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        emacs: ['29.1', '30.1']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Emacs (Linux, macOS)
+        if: runner.os != 'Windows'
+        uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs }}
+
+      - name: Install Emacs (Windows)
+        if: runner.os == 'Windows'
+        uses: jcs090218/setup-emacs-windows@master
+        with:
+          version: ${{ matrix.emacs }}
+
+      # The package itself only ever runs gzip (optional: Emacs' zlib is the
+      # fallback) and genome-cli (optional: tests use the fake in test/bin).
+      # Leave gzip off PATH on Windows, as on a stock machine, so the zlib
+      # path is what gets exercised there.
+      - name: Tool report
+        shell: bash
+        run: |
+          emacs --version | head -1
+          emacs -Q --batch --eval '(message "zlib: %s  json: %s  sh: %s  gzip: %s" (and (fboundp (quote zlib-available-p)) (zlib-available-p)) (and (fboundp (quote json-available-p)) (json-available-p)) (executable-find "sh") (executable-find "gzip"))'
+
+      - name: Byte-compile (warnings are errors)
+        run: emacs -Q --batch -l test/run-tests.el compile
+
+      - name: Checkdoc
+        run: emacs -Q --batch -l test/run-tests.el checkdoc
+
+      - name: Test (make)
+        if: runner.os != 'Windows'
+        run: make test
+
+      - name: Test (run-tests.el, no make)
+        if: runner.os == 'Windows'
+        run: emacs -Q --batch -l test/run-tests.el test

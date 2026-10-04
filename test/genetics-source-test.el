@@ -17,7 +17,8 @@
   (let ((genetics-genome-executable "genome")
         (genetics-genome-page-size 100))
     (should (equal (genetics-genome-argv 'import "/data/kit.vcf.gz")
-                   '("genome" "import" "/data/kit.vcf.gz" "--format" "json")))
+                   (list "genome" "import" (expand-file-name "/data/kit.vcf.gz")
+                         "--format" "json")))
     (should (equal (genetics-genome-argv 'summary "k1")
                    '("genome" "summary" "k1" "--format" "json")))
     (should (equal (genetics-genome-argv 'lookup "k1" "rs7412")
@@ -33,7 +34,12 @@
     (should-error (genetics-genome-argv 'frobnicate) :type 'genetics-genome-error)
     ;; the explain twin is pure and exact
     (should (equal (genetics-source-genome-cli-explain "/data/my kit.txt")
-                   "genome import /data/my\\ kit.txt --format json"))))
+                   (concat "genome import "
+                           (shell-quote-argument (expand-file-name "/data/my kit.txt"))
+                           " --format json")))
+    (unless (eq system-type 'windows-nt)
+      (should (equal (genetics-source-genome-cli-explain "/data/my kit.txt")
+                     "genome import /data/my\\ kit.txt --format json")))))
 
 (ert-deftest genetics-source-test-auto-picks-source ()
   (genetics-test-with-env

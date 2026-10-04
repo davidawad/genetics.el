@@ -92,10 +92,44 @@ Or report from any Org file (`C-c C-x C-u` on a block fills it):
 
 ## Install
 
-Requires Emacs 29.1 or newer. For gzipped VCFs read natively the `gzip`
-executable must be on `exec-path`. Optional: install genome-cli so that
-`genome` is on `exec-path` (or set `genetics-genome-executable`); it is then
-used for every file, and it is required for the FASTQ commands.
+Requires Emacs 29.1 or newer on Linux, macOS or Windows (native Windows
+Emacs; WSL works too). Nothing else is required: `gzip` and genome-cli are
+optional, and external programs are found with `executable-find` (so
+`gzip.exe` / `genome.exe` work on Windows) and run with argument lists,
+never through a shell. Native JSON (libjansson on Emacs 29, built in on 30)
+is used when present; Emacs 29 builds without it fall back to `json.el`.
+
+### Requirements per OS
+
+| | Emacs | gzip (optional) | genome-cli (optional) |
+|-|-------|-----------------|-----------------------|
+| Debian/Ubuntu | `sudo apt install emacs` | preinstalled (`sudo apt install gzip`) | see [genome-cli](https://gitlab.com/davidawad/genome-cli) |
+| Fedora | `sudo dnf install emacs` | preinstalled (`sudo dnf install gzip`) | as above |
+| Arch | `sudo pacman -S emacs` | preinstalled (`sudo pacman -S gzip`) | as above |
+| macOS (Homebrew) | `brew install --cask emacs` | preinstalled (`/usr/bin/gzip`) | as above |
+| Windows | `winget install GNU.Emacs`, `choco install emacs` or `scoop install extras/emacs` | `scoop install gzip`, `choco install gzip`, or Git for Windows' `C:/Program Files/Git/usr/bin/gzip.exe` (set `genetics-gzip-program` to that path); or none, see below | `genome.exe` on `PATH`, or set `genetics-genome-executable` |
+
+genetics.el draws no charts: it does not use gnuplot, Vega (`vl2svg` /
+`vl2png`), `rsvg-convert` or Emacs' SVG/librsvg support, so builds without
+image support (including `emacs -nw` and Windows builds without librsvg) lose
+nothing. The README screenshots come from `examples/screenshots.sh`, a
+Linux/X11-only maintainer script (Xvfb, xwd, ImageMagick).
+
+### What degrades without each tool
+
+| Missing | Effect |
+|---------|--------|
+| `gzip` | `.vcf.gz` is decompressed by Emacs' own zlib when the build has it (standard Linux, Homebrew and GNU Windows builds do; check with `M-: (zlib-available-p)`). Plain gzip and BGZF (`bgzip`/tabix) files work; the whole compressed file is read into memory, and a multi-member file that is not BGZF is refused with `genetics-gzip-error`. Set `genetics-gzip-program` to `nil` to always use zlib. |
+| `gzip` and zlib | Opening a `.gz` signals `genetics-gzip-error`: install gzip, use genome-cli, or decompress the file first. Uncompressed files are unaffected. |
+| genome-cli | `genetics-source-auto` uses the native parser for every file; only the FASTQ commands (`genetics-fastq-plan`/`-run`) need it and say so (`genetics-genome-missing`). |
+| `sh` (tests only) | The genome-cli tests use a fake `genome` sh script (`genome.cmd` shim on Windows, run with Git for Windows' `sh.exe`); without `sh` they are skipped. |
+
+Files the package writes (exports, reports, caches, SNPedia answers) are
+always UTF-8 with LF line endings; input with CRLF line endings (files that
+passed through Windows) reads the same as LF. `genetics-data-directory`
+defaults to the macOS Google Drive folder only on macOS when it exists, and
+to `~/` elsewhere; if the configured directory is missing (a configuration
+shared between machines), prompts start in `default-directory`.
 
 ```elisp
 (use-package genetics
@@ -335,8 +369,9 @@ See [`examples/genetics-report.org`](examples/genetics-report.org) and its
 | `genetics-source-function` | `genetics-source-auto` | how files become kits: genome-cli when installed, else native (see [Sources](#sources-genome-cli-or-the-native-parser)) |
 | `genetics-genome-executable` | `"genome"` | name or path of genome-cli |
 | `genetics-genome-page-size` | 5000 | records per `genome query` call when browsing/exporting |
-| `genetics-data-directory` | `~/Documents/Genetics/` | start directory when prompting for a file |
+| `genetics-data-directory` | on macOS `~/Documents/Genetics/` when it exists, else `~/` | start directory when prompting for a file (prompts fall back to `default-directory` if it does not exist) |
 | `genetics-use-cache` | `t` | cache natively parsed kits as `.eld` files |
+| `genetics-gzip-program` | `"gzip"` | gzip executable for `.gz` files; `nil` or not found: Emacs' zlib |
 | `genetics-cache-directory` | `(locate-user-emacs-file "genetics-cache/")` | cache location (also holds SNPedia answers, decompressed VCFs) |
 | `genetics-vcf-eager-limit` | 200 MB | natively parsed VCFs above this are offset-indexed |
 | `genetics-chunk-size` | 4 MB | read size when streaming |
@@ -474,13 +509,27 @@ make lint       # compile + checkdoc
 make clean
 ```
 
+Without make (native Windows), the same checks run from
+`test/run-tests.el`, which the Makefile calls too:
+
+```sh
+emacs -Q --batch -l test/run-tests.el            # tests
+emacs -Q --batch -l test/run-tests.el compile    # or checkdoc, or all
+```
+
+CI (`.github/workflows/test.yml`) runs byte-compile, checkdoc and the tests
+on Ubuntu, macOS and Windows with Emacs 29.1 and 30.1. Tests that need
+`gzip` or `sh` skip cleanly where those are absent; the zlib fallback is
+tested with committed `.gz` fixtures, so it runs everywhere.
+
 Files: `genetics.el` (entry point), `genetics-core.el`, `genetics-parse.el`,
 `genetics-source.el` (native / genome-cli source layer),
 `genetics-fastq.el` (genome pipeline commands), `genetics-stats.el`,
 `genetics-annotate.el`, `genetics-browse.el`, `genetics-lookup.el`,
 `genetics-report.el`, `genetics-org.el` (Org dynamic blocks),
 `genetics-compare.el`, `genetics-export.el`, `genetics-snpedia.el`. Tests live in `test/*-test.el`, fixtures (synthetic,
-fake genotypes) in `test/fixtures/`. `test/bin/genome` is a fake genome-cli
+fake genotypes) in `test/fixtures/`. `test/bin/genome` (with the
+`genome.cmd` shim for Windows) is a fake genome-cli
 that replays recorded, synthetic genome/v1 JSON from
 `test/fixtures/genome/` and logs each argv, so the genome-cli source is
 tested without the real binary.

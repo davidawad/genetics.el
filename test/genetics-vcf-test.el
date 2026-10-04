@@ -95,13 +95,64 @@
           (should-error (genetics-parse-file gz) :type 'genetics-unknown-format)
         (delete-file gz)))))
 
-(ert-deftest genetics-vcf-test-gzip-missing-binary ()
+(ert-deftest genetics-vcf-test-gzip-missing-binary-and-zlib ()
   (genetics-test-with-env
-    (let ((gz (genetics-test-gzip (genetics-test-fixture "sample.vcf"))))
-      (unwind-protect
-          (cl-letf (((symbol-function 'executable-find) (lambda (&rest _) nil)))
-            (should-error (genetics-parse-file gz) :type 'genetics-gzip-error))
-        (delete-file gz)))))
+    (cl-letf (((symbol-function 'executable-find) (lambda (&rest _) nil))
+              ((symbol-function 'zlib-available-p) (lambda () nil)))
+      (should-error (genetics-parse-file (genetics-test-fixture "sample.vcf.gz"))
+                    :type 'genetics-gzip-error)
+      (let ((genetics-vcf-eager-limit 10))
+        (should-error (genetics-parse-file (genetics-test-fixture "sample.vcf.gz"))
+                      :type 'genetics-gzip-error)))))
+
+(defmacro genetics-vcf-test--without-gzip (&rest body)
+  "Run BODY as if no gzip executable were installed (zlib fallback)."
+  (declare (indent 0))
+  `(progn
+     (skip-unless (and (fboundp 'zlib-available-p) (zlib-available-p)))
+     (let ((genetics-gzip-program nil)) ,@body)))
+
+(ert-deftest genetics-vcf-test-zlib-fallback ()
+  "Without gzip, plain and BGZF .vcf.gz files are read with Emacs' zlib."
+  (genetics-test-with-env
+    (genetics-vcf-test--without-gzip
+      (let ((plain (genetics-parse-file (genetics-test-fixture "sample.vcf"))))
+        (dolist (name '("sample.vcf.gz" "sample.bgzf.vcf.gz"))
+          (let ((kit (genetics-parse-file (genetics-test-fixture name))))
+            (should-not (genetics-kit-lazy kit))
+            (should (equal (genetics-test-snps plain) (genetics-test-snps kit)))
+            (should (equal "SAMPLE1" (genetics-kit-sample kit)))))
+        (let* ((genetics-vcf-eager-limit 10)
+               (kit (genetics-parse-file (genetics-test-fixture "sample.bgzf.vcf.gz"))))
+          (should (genetics-kit-lazy kit))
+          (should (equal (genetics-vcf-test--all plain)
+                         (genetics-vcf-test--all kit)))
+          (should (equal (with-temp-buffer
+                           (insert-file-contents-literally
+                            (genetics-test-fixture "sample.vcf"))
+                           (buffer-string))
+                         (with-temp-buffer
+                           (insert-file-contents-literally
+                            (genetics-kit-data-file kit))
+                           (buffer-string)))))))))
+
+(ert-deftest genetics-vcf-test-zlib-fallback-multi-member ()
+  "A non-BGZF multi-member file is refused rather than truncated."
+  (genetics-test-with-env
+    (genetics-vcf-test--without-gzip
+      (should-error (genetics-parse-file (genetics-test-fixture "multi-member.vcf.gz"))
+                    :type 'genetics-gzip-error))))
+
+(ert-deftest genetics-vcf-test-gzip-binary-multi-member ()
+  "With gzip installed, multi-member files decompress fully."
+  (skip-unless (executable-find "gzip"))
+  (genetics-test-with-env
+    (let ((genetics-gzip-program "gzip")
+          (plain (genetics-parse-file (genetics-test-fixture "sample.vcf"))))
+      (dolist (name '("multi-member.vcf.gz" "sample.bgzf.vcf.gz"))
+        (should (equal (genetics-test-snps plain)
+                       (genetics-test-snps
+                        (genetics-parse-file (genetics-test-fixture name)))))))))
 
 (defun genetics-vcf-test--all (kit)
   "Return the list of SNPs of KIT in walk order."

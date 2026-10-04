@@ -107,7 +107,7 @@
 (defun genetics-report-write (kit file)
   "Write the Org report for KIT to FILE and return FILE."
   (let ((text (genetics-report-string kit)))
-    (with-temp-file file (insert text))
+    (genetics--with-output-file file (insert text))
     file))
 
 ;;;###autoload
@@ -129,7 +129,7 @@ Returns the report buffer."
         (org-mode)
         (goto-char (point-min))))
     (when file
-      (with-temp-file file (insert text)))
+      (genetics--with-output-file file (insert text)))
     (pop-to-buffer buf)
     buf))
 

@@ -1,0 +1,6 @@
+# Keep LF everywhere (fixtures are byte-offset sensitive; test/bin/genome
+# is a sh script), even on Windows checkouts with core.autocrlf.
+* text=auto eol=lf
+*.gz binary
+*.png binary
+*.cmd text eol=crlf
