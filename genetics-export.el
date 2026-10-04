@@ -56,7 +56,8 @@ and plist FILTERS (see `genetics-browse-rows') select the records."
     (with-temp-file file
       (insert "RSID,CHROMOSOME,POSITION,RESULT,ZYGOSITY,GENE,REF,ALT\n")
       (dolist (s snps)
-        (let ((ann (gethash (genetics-snp-rsid s) annotations)))
+        (let ((ann (genetics-snp-annotation s (genetics-kit-build (car ctx))
+                                            annotations)))
           (insert (mapconcat
                    #'genetics-export--csv-quote
                    (list (genetics-snp-rsid s) (genetics-snp-chrom s)
@@ -83,7 +84,8 @@ Arguments FILE, KIT and FILTERS are as for `genetics-export-csv'."
           (vconcat
            (mapcar
             (lambda (s)
-              (let ((ann (gethash (genetics-snp-rsid s) annotations)))
+              (let ((ann (genetics-snp-annotation
+                          s (genetics-kit-build (car ctx)) annotations)))
                 `((rsid . ,(genetics-snp-rsid s))
                   (chromosome . ,(genetics-snp-chrom s))
                   (position . ,(genetics-snp-pos s))

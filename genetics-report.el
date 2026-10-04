@@ -30,7 +30,7 @@
 (require 'genetics-annotate)
 
 (defconst genetics-report-disclaimer
-  "This report is informational only and is not medical advice. Consumer genotyping arrays are not diagnostic, can produce false positives, and cover only a small part of the genome. Discuss any finding with a qualified clinician or genetic counselor and confirm it with a clinical-grade test before acting on it."
+  "This report is informational only and is not medical advice. Consumer genotyping arrays and consumer sequencing are not diagnostic and can produce false positives; arrays cover only a small part of the genome. Discuss any finding with a qualified clinician or genetic counselor and confirm it with a clinical-grade test before acting on it."
   "Disclaimer text placed at the end of every report.")
 
 (defun genetics--org-cell (value)
@@ -41,14 +41,14 @@
 
 (defun genetics--report-hit-row (ann snp)
   "Return the Org table row string for annotation ANN and call SNP."
-  (let* ((a (genetics-assess ann (genetics-snp-genotype snp)))
+  (let* ((a (genetics-assess-snp ann snp))
          (url (genetics-annotation-url ann)))
     (format "| %s |\n"
             (mapconcat
              #'genetics--org-cell
              (list (genetics-annotation-rsid ann)
                    (genetics-annotation-gene ann)
-                   (genetics-snp-genotype snp)
+                   (genetics-snp-genotype-label snp)
                    (genetics-annotation-risk-allele ann)
                    (let ((c (plist-get a :copies))) (if c c "n/a"))
                    (plist-get a :interpretation)
@@ -72,21 +72,27 @@
       (when (genetics-kit-sample kit)
         (insert (format "- Sample: %s\n" (genetics-kit-sample kit))))
       (insert (format "- Records: %d\n" (plist-get stats :total)))
+      (when (genetics-kit-assay kit)
+        (insert (format "- Assay: %s (reference calls: %s)\n"
+                        (genetics-kit-assay kit)
+                        (or (genetics-kit-ref-calls kit) "unknown"))))
       (when (plist-get stats :nocalls)
         (insert (format "- No-calls: %d (%.2f%%)\n" (plist-get stats :nocalls)
                         (* 100 (genetics-nocall-rate kit)))))
-      (unless (genetics-kit-lazy kit)
+      (unless (and (genetics-kit-lazy kit) (not (plist-get stats :sex)))
         (insert (format "- Inferred sex: %s\n" (genetics-sex-description kit))))
       (insert "\n* Strand and build caveats\n")
       (dolist (c (genetics-kit-caveats kit))
         (insert (format "- %s\n" c)))
-      (insert "- Risk alleles in this report are given on the + strand of GRCh37. A genotype containing only complementary alleles is flagged as a possible strand flip and is never flipped automatically.\n")
+      (insert "- Risk alleles in this report are given on the + strand (identical on GRCh37 and GRCh38 for the curated SNPs). A genotype containing only complementary alleles is flagged as a possible strand flip and is never flipped automatically.\n")
       (insert "\n* Annotated findings\n")
       (if (null hits)
           (insert "No annotated SNPs were found in this kit.\n")
         (insert "| rsid | gene | genotype | risk allele | copies | interpretation | strand note | source |\n|-\n")
         (dolist (h hits)
-          (insert (genetics--report-hit-row (car h) (cdr h)))))
+          (insert (genetics--report-hit-row (car h) (cdr h))))
+        (when (cl-some (lambda (h) (genetics-snp-inferred-p (cdr h))) hits)
+          (insert "\nGenotypes marked \"(inferred ref)\" were not observed. " genetics-inferred-ref-text "\n")))
       (insert "\n* APOE haplotype\n")
       (if (null apoe)
           (insert "rs429358 and rs7412 were not both present, so APOE could not be assessed.\n")

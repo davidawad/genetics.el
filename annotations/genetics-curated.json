@@ -2,6 +2,24 @@
   {
     "rsid": "rs429358",
     "gene": "APOE",
+    "coordinates": {
+      "GRCh37": {
+        "chrom": "19",
+        "pos": 45411941,
+        "ref": "T"
+      },
+      "GRCh38": {
+        "chrom": "19",
+        "pos": 44908684,
+        "ref": "T"
+      }
+    },
+    "coordinate_sources": [
+      "https://www.ncbi.nlm.nih.gov/snp/rs429358",
+      "https://rest.ensembl.org/variation/human/rs429358",
+      "https://grch37.rest.ensembl.org/variation/human/rs429358"
+    ],
+    "coordinates_verified": "2026-10-03: NCBI dbSNP Variation API (GRCh37.p13, GRCh38.p14) and Ensembl REST (GRCh38, GRCh37) agree on chromosome, 1-based position and reference allele.",
     "risk_allele": "C",
     "other_allele": "T",
     "effect": "Defines the APOE e4 allele together with rs7412 (e4 = C at rs429358 plus C at rs7412). Each copy of C at rs429358 is part of the e4 (or rare e1) haplotype, associated with higher late-onset Alzheimer's disease risk.",
@@ -18,6 +36,24 @@
   {
     "rsid": "rs7412",
     "gene": "APOE",
+    "coordinates": {
+      "GRCh37": {
+        "chrom": "19",
+        "pos": 45412079,
+        "ref": "C"
+      },
+      "GRCh38": {
+        "chrom": "19",
+        "pos": 44908822,
+        "ref": "C"
+      }
+    },
+    "coordinate_sources": [
+      "https://www.ncbi.nlm.nih.gov/snp/rs7412",
+      "https://rest.ensembl.org/variation/human/rs7412",
+      "https://grch37.rest.ensembl.org/variation/human/rs7412"
+    ],
+    "coordinates_verified": "2026-10-03: NCBI dbSNP Variation API (GRCh37.p13, GRCh38.p14) and Ensembl REST (GRCh38, GRCh37) agree on chromosome, 1-based position and reference allele.",
     "risk_allele": "T",
     "other_allele": "C",
     "effect": "Defines the APOE e2 allele together with rs429358 (e2 = T at rs429358 plus T at rs7412). The T allele marks e2 (or rare e1) and is associated with lower Alzheimer's risk but possible type III hyperlipoproteinemia.",
@@ -34,6 +70,24 @@
   {
     "rsid": "rs1801133",
     "gene": "MTHFR",
+    "coordinates": {
+      "GRCh37": {
+        "chrom": "1",
+        "pos": 11856378,
+        "ref": "G"
+      },
+      "GRCh38": {
+        "chrom": "1",
+        "pos": 11796321,
+        "ref": "G"
+      }
+    },
+    "coordinate_sources": [
+      "https://www.ncbi.nlm.nih.gov/snp/rs1801133",
+      "https://rest.ensembl.org/variation/human/rs1801133",
+      "https://grch37.rest.ensembl.org/variation/human/rs1801133"
+    ],
+    "coordinates_verified": "2026-10-03: NCBI dbSNP Variation API (GRCh37.p13, GRCh38.p14) and Ensembl REST (GRCh38, GRCh37) agree on chromosome, 1-based position and reference allele.",
     "risk_allele": "A",
     "other_allele": "G",
     "effect": "MTHFR C677T (A222V). The variant allele reduces MTHFR enzyme activity; the clinical impact is modest and depends on folate status.",
@@ -50,6 +104,24 @@
   {
     "rsid": "rs1801131",
     "gene": "MTHFR",
+    "coordinates": {
+      "GRCh37": {
+        "chrom": "1",
+        "pos": 11854476,
+        "ref": "T"
+      },
+      "GRCh38": {
+        "chrom": "1",
+        "pos": 11794419,
+        "ref": "T"
+      }
+    },
+    "coordinate_sources": [
+      "https://www.ncbi.nlm.nih.gov/snp/rs1801131",
+      "https://rest.ensembl.org/variation/human/rs1801131",
+      "https://grch37.rest.ensembl.org/variation/human/rs1801131"
+    ],
+    "coordinates_verified": "2026-10-03: NCBI dbSNP Variation API (GRCh37.p13, GRCh38.p14) and Ensembl REST (GRCh38, GRCh37) agree on chromosome, 1-based position and reference allele.",
     "risk_allele": "G",
     "other_allele": "T",
     "effect": "MTHFR A1298C (E429A). The variant allele is associated with a mild reduction in enzyme activity, smaller than C677T.",
@@ -66,11 +138,29 @@
   {
     "rsid": "rs6025",
     "gene": "F5",
+    "coordinates": {
+      "GRCh37": {
+        "chrom": "1",
+        "pos": 169519049,
+        "ref": "T"
+      },
+      "GRCh38": {
+        "chrom": "1",
+        "pos": 169549811,
+        "ref": "C"
+      }
+    },
+    "coordinate_sources": [
+      "https://www.ncbi.nlm.nih.gov/snp/rs6025",
+      "https://rest.ensembl.org/variation/human/rs6025",
+      "https://grch37.rest.ensembl.org/variation/human/rs6025"
+    ],
+    "coordinates_verified": "2026-10-03: NCBI dbSNP Variation API (GRCh37.p13, GRCh38.p14) and Ensembl REST (GRCh38, GRCh37) agree on chromosome, 1-based position and reference allele.",
     "risk_allele": "T",
     "other_allele": "C",
     "effect": "Factor V Leiden (R506Q). The variant allele causes activated protein C resistance and raises the risk of venous thrombosis.",
     "magnitude": 4,
-    "strand": "Reported on the + strand (GRCh37) as C/T. F5 is on the - strand, so the Factor V Leiden change (gene strand G>A) appears as T on the + strand. Risk allele here = T (+ strand) = A (gene strand).",
+    "strand": "Reported on the + strand (GRCh37) as C/T. F5 is on the - strand, so the Factor V Leiden change (gene strand G>A) appears as T on the + strand. Risk allele here = T (+ strand) = A (gene strand). Note: the GRCh37 reference base at this site is T (the Leiden allele) while GRCh38 has C, so on a GRCh37 variant-only VCF an absent site would be inferred TT; treat any inferred call here with extra caution.",
     "notes": "Informational only, not medical advice. A positive result should be confirmed by a clinical test and discussed with a clinician. dbSNP: https://www.ncbi.nlm.nih.gov/snp/rs6025",
     "url": "https://www.snpedia.com/index.php/Rs6025",
     "genotypes": {
@@ -82,6 +172,24 @@
   {
     "rsid": "rs1800562",
     "gene": "HFE",
+    "coordinates": {
+      "GRCh37": {
+        "chrom": "6",
+        "pos": 26093141,
+        "ref": "G"
+      },
+      "GRCh38": {
+        "chrom": "6",
+        "pos": 26092913,
+        "ref": "G"
+      }
+    },
+    "coordinate_sources": [
+      "https://www.ncbi.nlm.nih.gov/snp/rs1800562",
+      "https://rest.ensembl.org/variation/human/rs1800562",
+      "https://grch37.rest.ensembl.org/variation/human/rs1800562"
+    ],
+    "coordinates_verified": "2026-10-03: NCBI dbSNP Variation API (GRCh37.p13, GRCh38.p14) and Ensembl REST (GRCh38, GRCh37) agree on chromosome, 1-based position and reference allele.",
     "risk_allele": "A",
     "other_allele": "G",
     "effect": "HFE C282Y. Homozygosity is the main cause of HFE hereditary hemochromatosis (iron overload), with incomplete penetrance.",
@@ -98,6 +206,24 @@
   {
     "rsid": "rs4988235",
     "gene": "MCM6/LCT",
+    "coordinates": {
+      "GRCh37": {
+        "chrom": "2",
+        "pos": 136608646,
+        "ref": "G"
+      },
+      "GRCh38": {
+        "chrom": "2",
+        "pos": 135851076,
+        "ref": "G"
+      }
+    },
+    "coordinate_sources": [
+      "https://www.ncbi.nlm.nih.gov/snp/rs4988235",
+      "https://rest.ensembl.org/variation/human/rs4988235",
+      "https://grch37.rest.ensembl.org/variation/human/rs4988235"
+    ],
+    "coordinates_verified": "2026-10-03: NCBI dbSNP Variation API (GRCh37.p13, GRCh38.p14) and Ensembl REST (GRCh38, GRCh37) agree on chromosome, 1-based position and reference allele.",
     "risk_allele": "A",
     "other_allele": "G",
     "effect": "LCT -13910 C/T. The T allele (gene strand) is the lactase persistence allele in European-ancestry populations. This is a trait, not a disease risk.",
@@ -114,6 +240,24 @@
   {
     "rsid": "rs4244285",
     "gene": "CYP2C19",
+    "coordinates": {
+      "GRCh37": {
+        "chrom": "10",
+        "pos": 96541616,
+        "ref": "G"
+      },
+      "GRCh38": {
+        "chrom": "10",
+        "pos": 94781859,
+        "ref": "G"
+      }
+    },
+    "coordinate_sources": [
+      "https://www.ncbi.nlm.nih.gov/snp/rs4244285",
+      "https://rest.ensembl.org/variation/human/rs4244285",
+      "https://grch37.rest.ensembl.org/variation/human/rs4244285"
+    ],
+    "coordinates_verified": "2026-10-03: NCBI dbSNP Variation API (GRCh37.p13, GRCh38.p14) and Ensembl REST (GRCh38, GRCh37) agree on chromosome, 1-based position and reference allele.",
     "risk_allele": "A",
     "other_allele": "G",
     "effect": "CYP2C19*2 (c.681G>A) is a loss-of-function allele that reduces metabolism of drugs such as clopidogrel.",

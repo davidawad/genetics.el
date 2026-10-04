@@ -71,8 +71,9 @@ CALLS is a list of (KIT-NAME . SNP) for the kits that have the record."
     (row "Strand:" (genetics-annotation-strand ann))
     (row "Notes:" (genetics-annotation-notes ann))
     (dolist (call calls)
-      (let ((a (genetics-assess ann (genetics-snp-genotype (cdr call)))))
-        (insert (format "\n  %s: %s\n" (car call) (genetics-snp-genotype (cdr call))))
+      (let ((a (genetics-assess-snp ann (cdr call))))
+        (insert (format "\n  %s: %s\n" (car call)
+                        (genetics-snp-genotype-label (cdr call))))
         (row "Copies:" (plist-get a :copies))
         (row "Flag:" (plist-get a :flag))
         (row "Meaning:" (plist-get a :interpretation)))))
@@ -115,21 +116,36 @@ Returns the lookup buffer."
         (erase-buffer)
         (insert (propertize (format "%s\n\n" rsid) 'face 'bold))
         (dolist (kit genetics-loaded-kits)
-          (let ((snp (genetics-kit-get kit rsid)))
+          (let ((snp (genetics-kit-resolve kit rsid)))
             (when snp (push (cons (genetics-kit-name kit) snp) calls))
             (insert
              (if snp
-                 (format "%-24s %s  chr%s:%d  %s (GRCh%s)\n"
-                         (genetics-kit-name kit) (genetics-snp-genotype snp)
+                 (format "%-24s %s  chr%s:%d  %s (GRCh%s)%s\n"
+                         (genetics-kit-name kit)
+                         (genetics-snp-genotype-label snp)
                          (genetics-snp-chrom snp) (genetics-snp-pos snp)
                          (genetics-zygosity (genetics-snp-genotype snp))
-                         (or (genetics-kit-build kit) "?"))
+                         (or (genetics-kit-build kit) "?")
+                         (cond ((genetics-snp-inferred-p snp)
+                                "\n                         inferred, not observed: absent from a variant-only WGS VCF")
+                               ((not (equal (genetics-snp-rsid snp) rsid))
+                                "  matched by position")
+                               (t "")))
                (format "%-24s not present\n" (genetics-kit-name kit))))))
         (insert "\n")
+        ;; a position id (chrom:pos) from a kit without rsids
+        (unless ann
+          (cl-loop for kit in genetics-loaded-kits
+                   for snp = (cdr (assoc (genetics-kit-name kit) calls))
+                   until ann
+                   when snp
+                   do (setq ann (genetics-snp-annotation
+                                 snp (genetics-kit-build kit)))))
         (if ann
             (genetics--lookup-annotation-section ann (nreverse calls))
           (insert "No annotation for this rsid in `genetics-annotation-files'.\n"))
-        (genetics--lookup-apoe-section rsid)
+        (genetics--lookup-apoe-section
+         (if ann (genetics-annotation-rsid ann) rsid))
         (when genetics-snpedia-enabled
           (require 'genetics-snpedia)
           (insert "\nSNPedia\n")

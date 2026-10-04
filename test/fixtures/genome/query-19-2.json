@@ -1,0 +1,1 @@
+{"schema":"genome/v1","kind":"genotypes","generated_at":"2026-10-03T12:00:00Z","count":1,"data":[{"kit":"k1","rsid":null,"chrom":"19","pos":45000000,"build":"GRCh38","ref":"A","alt":["G","T"],"genotype":"GT","zygosity":"het","call_source":"observed","filter":"PASS","quality":50.0,"depth":30,"lifted_from":null}],"warnings":[]}

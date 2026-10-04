@@ -18,11 +18,19 @@
 
 ;; Annotations are user-editable JSON or Org files describing SNPs of
 ;; interest.  JSON: an array of objects with keys rsid, gene, risk_allele,
-;; other_allele, effect, magnitude, notes, url, strand and genotypes (a map
-;; from genotype to interpretation).  Org: one heading per SNP with a
-;; property drawer (RSID, GENE, RISK_ALLELE, OTHER_ALLELE, EFFECT,
-;; MAGNITUDE, URL, STRAND and GT_<genotype> properties); the heading body
-;; is the notes text.  Everything is informational, not medical advice.
+;; other_allele, effect, magnitude, notes, url, strand, genotypes (a map
+;; from genotype to interpretation) and coordinates, a map from build
+;; ("GRCh37", "GRCh38") to {"chrom", "pos", "ref"} (1-based, + strand),
+;; cited by coordinate_sources.  Org: one heading per SNP with a property
+;; drawer (RSID, GENE, RISK_ALLELE, OTHER_ALLELE, EFFECT, MAGNITUDE, URL,
+;; STRAND, GT_<genotype> and GRCH37_CHROM/_POS/_REF, GRCH38_CHROM/_POS/_REF
+;; properties); the heading body is the notes text.
+;;
+;; Coordinates let a kit without rsids (a whole-genome VCF) be matched by
+;; position on its own build.  When such a kit lists variant sites only, a
+;; curated site that is absent is reported as homozygous reference with
+;; call source `inferred-ref', always labelled as inferred.  Everything is
+;; informational, not medical advice.
 
 ;;; Code:
 
@@ -35,7 +43,33 @@
                                    (:copier nil))
   "Annotation of one SNP."
   rsid gene risk-allele other-allele effect magnitude notes url strand
-  genotypes)
+  genotypes coordinates sources)
+
+(defun genetics-build-key (build)
+  "Return \"37\" or \"38\" for BUILD (e.g. \"GRCh38\", \"hg19\", 37), else nil."
+  (let ((b (downcase (format "%s" (or build "")))))
+    (cond ((string-match-p "\\`\\(grch\\)?37\\(\\.[0-9p]+\\)?\\'\\|\\`hg19\\'\\|\\`b37\\'" b) "37")
+          ((string-match-p "\\`\\(grch\\)?38\\(\\.[0-9p]+\\)?\\'\\|\\`hg38\\'\\|\\`b38\\'" b) "38"))))
+
+(defun genetics--ann-site (file rsid build chrom pos ref)
+  "Validate one coordinate of RSID in FILE; return (BUILD-KEY . PLIST).
+BUILD, CHROM, POS and REF are the raw values; POS may be a string."
+  (let ((key (genetics-build-key build))
+        (pos (if (stringp pos) (and (string-match-p "\\`[0-9]+\\'" pos)
+                                    (string-to-number pos))
+               pos)))
+    (unless key
+      (genetics--ann-error file "%s: unknown build %S (use GRCh37 or GRCh38)"
+                           rsid build))
+    (unless (and (stringp chrom) (not (string-empty-p chrom)))
+      (genetics--ann-error file "%s: %s coordinate has no chrom" rsid build))
+    (unless (and (integerp pos) (> pos 0))
+      (genetics--ann-error file "%s: %s coordinate needs a positive pos" rsid
+                           build))
+    (when (and ref (not (string-match-p "\\`[ACGTacgt]+\\'" ref)))
+      (genetics--ann-error file "%s: %s ref %S is not a base" rsid build ref))
+    (cons key (list :chrom (genetics-normalize-chrom chrom) :pos pos
+                    :ref (and ref (upcase ref))))))
 
 ;;;; Loading
 
@@ -66,7 +100,19 @@
      :magnitude (alist-get 'magnitude obj)
      :notes (alist-get 'notes obj) :url (alist-get 'url obj)
      :strand (alist-get 'strand obj)
-     :genotypes (genetics--ann-genotypes (alist-get 'genotypes obj)))))
+     :genotypes (genetics--ann-genotypes (alist-get 'genotypes obj))
+     :coordinates
+     (mapcar (lambda (c)
+               (let ((v (cdr c)))
+                 (unless (and (consp v) (consp (car v)))
+                   (genetics--ann-error file "%s: coordinates.%s must be an object"
+                                        rsid (car c)))
+                 (genetics--ann-site file rsid (symbol-name (car c))
+                                     (let ((ch (alist-get 'chrom v)))
+                                       (if (numberp ch) (number-to-string ch) ch))
+                                     (alist-get 'pos v) (alist-get 'ref v))))
+             (alist-get 'coordinates obj))
+     :sources (alist-get 'coordinate_sources obj))))
 
 (defun genetics--load-annotation-json (file)
   "Return the annotations in JSON FILE."
@@ -104,7 +150,16 @@
      :genotypes (genetics--ann-genotypes
                  (cl-loop for (k . v) in props
                           when (string-prefix-p "GT_" k)
-                          collect (cons (substring k 3) v))))))
+                          collect (cons (substring k 3) v)))
+     :coordinates
+     (cl-loop for b in '("GRCH37" "GRCH38")
+              for chrom = (funcall get (concat b "_CHROM"))
+              for pos = (funcall get (concat b "_POS"))
+              when (or chrom pos)
+              collect (genetics--ann-site file rsid b chrom pos
+                                          (funcall get (concat b "_REF"))))
+     :sources (let ((src (funcall get "COORDINATE_SOURCES")))
+                (and src (list src))))))
 
 (defun genetics--load-annotation-org (file)
   "Return the annotations in Org FILE (headings with property drawers)."
@@ -159,6 +214,10 @@
 (defvar genetics--annotation-cache nil
   "Cons of (SIGNATURE . HASH-TABLE) for the loaded annotations.")
 
+(defvar genetics--annotation-position-cache nil
+  "Cons of (HASH-TABLE . POSITION-TABLE) indexing annotations by site.
+POSITION-TABLE maps \"BUILD:CHROM:POS\" to an annotation.")
+
 (defun genetics--annotation-signature ()
   "Return a value that differs once annotation files are modified."
   (mapcar (lambda (f)
@@ -169,7 +228,8 @@
 (defun genetics-annotations ()
   "Return a hash table of rsid to annotation for `genetics-annotation-files'."
   (let ((sig (genetics--annotation-signature)))
-    (unless (equal sig (car genetics--annotation-cache))
+    (unless (and genetics--annotation-cache
+                 (equal sig (car genetics--annotation-cache)))
       (let ((table (make-hash-table :test 'equal)))
         (dolist (f genetics-annotation-files)
           (dolist (a (genetics-load-annotation-file f))
@@ -187,11 +247,95 @@
   "Return the annotation for RSID, or nil."
   (gethash rsid (genetics-annotations)))
 
+(defun genetics-annotation-site (ann build)
+  "Return the plist (:chrom :pos :ref) of ANN on BUILD, or nil."
+  (cdr (assoc (genetics-build-key build) (genetics-annotation-coordinates ann))))
+
+(defun genetics-annotation-at (build chrom pos)
+  "Return the annotation whose BUILD coordinate is CHROM:POS, or nil."
+  (let ((table (genetics-annotations)))
+    (unless (eq (car genetics--annotation-position-cache) table)
+      (let ((pt (make-hash-table :test 'equal)))
+        (maphash (lambda (_r ann)
+                   (dolist (c (genetics-annotation-coordinates ann))
+                     (puthash (format "%s:%s:%d" (car c)
+                                      (plist-get (cdr c) :chrom)
+                                      (plist-get (cdr c) :pos))
+                              ann pt)))
+                 table)
+        (setq genetics--annotation-position-cache (cons table pt))))
+    (let ((key (genetics-build-key build)))
+      (when key
+        (gethash (format "%s:%s:%d" key chrom pos)
+                 (cdr genetics--annotation-position-cache))))))
+
+(defun genetics-snp-annotation (snp &optional build annotations)
+  "Return the annotation of SNP by rsid, or by its position on BUILD.
+ANNOTATIONS is the rsid table (default `genetics-annotations')."
+  (or (gethash (genetics-snp-rsid snp) (or annotations (genetics-annotations)))
+      (and build (genetics-annotation-at build (genetics-snp-chrom snp)
+                                         (genetics-snp-pos snp)))))
+
+;;;; Resolving curated sites in a kit
+
+(defconst genetics--builtin-sites
+  '(("rs429358" ("37" :chrom "19" :pos 45411941 :ref "T")
+                ("38" :chrom "19" :pos 44908684 :ref "T"))
+    ("rs7412" ("37" :chrom "19" :pos 45412079 :ref "C")
+              ("38" :chrom "19" :pos 44908822 :ref "C")))
+  "Coordinates of the APOE SNPs, used when no annotation file has them.
+Verified 2026-10-03 against NCBI dbSNP and Ensembl (see
+annotations/genetics-curated.json).")
+
+(defun genetics-rsid-site (rsid build)
+  "Return the (:chrom :pos :ref) plist of RSID on BUILD, or nil.
+Coordinates come from the annotations, then `genetics--builtin-sites'."
+  (let ((ann (genetics-annotation rsid)))
+    (or (and ann (genetics-annotation-site ann build))
+        (cdr (assoc (genetics-build-key build)
+                    (cdr (assoc rsid genetics--builtin-sites)))))))
+
+(defun genetics--autosome-p (chrom)
+  "Return non-nil if CHROM is one of chromosomes 1-22."
+  (and (string-match-p "\\`[0-9]+\\'" chrom)
+       (<= 1 (string-to-number chrom) 22)))
+
+(defun genetics-kit-infer-ref (kit rsid site)
+  "Return an inferred homozygous-reference call for RSID at SITE in KIT.
+Return nil unless KIT is a variant-only WGS kit (`absent-means-ref'),
+SITE has a reference base on an autosome the kit has records for, and no
+non-reference deletion in KIT spans the site."
+  (let ((chrom (plist-get site :chrom)) (pos (plist-get site :pos))
+        (ref (plist-get site :ref)))
+    (when (and (eq (genetics-kit-ref-calls kit) 'absent-means-ref)
+               ref (genetics--autosome-p chrom)
+               (member chrom (genetics-kit-chromosomes kit))
+               (not (genetics-kit-site-spanned-p kit chrom pos)))
+      (genetics-snp-create rsid chrom pos (concat ref ref) ref nil
+                           'inferred-ref))))
+
+(defun genetics-kit-resolve (kit rsid)
+  "Return the call for RSID in KIT as a `genetics-snp', or nil.
+Looks up RSID itself; then, using the curated coordinates on the kit's
+build, the record at that position; then, for variant-only WGS kits, an
+inferred homozygous-reference call (call source `inferred-ref').  Kits
+served by genome-cli resolve all of this in genome-cli."
+  (if (genetics-kit-backend kit)
+      (genetics-kit-get kit rsid)
+    (or (genetics-kit-get kit rsid)
+        (let ((site (genetics-rsid-site rsid (genetics-kit-build kit))))
+          (when site
+            (or (genetics-kit-at kit (plist-get site :chrom)
+                                 (plist-get site :pos) (plist-get site :ref))
+                (genetics-kit-infer-ref kit rsid site)))))))
+
 (defun genetics-annotated-snps (kit)
-  "Return a list of (ANNOTATION . SNP) for annotated rsids present in KIT."
+  "Return a list of (ANNOTATION . SNP) for annotated rsids present in KIT.
+Sites are resolved with `genetics-kit-resolve', so a kit without rsids is
+matched by position and SNP may be an inferred reference call."
   (let (hits)
     (maphash (lambda (rsid ann)
-               (let ((snp (genetics-kit-get kit rsid)))
+               (let ((snp (genetics-kit-resolve kit rsid)))
                  (when snp (push (cons ann snp) hits))))
              (genetics-annotations))
     (sort hits (lambda (a b)
@@ -282,6 +426,18 @@ Keys: :genotype :copies :flag :flipped-copies :interpretation :strand."
                   :strand (genetics-annotation-strand ann))
             a)))
 
+(defun genetics-assess-snp (ann snp)
+  "Assess call SNP against annotation ANN, as `genetics-assess'.
+An inferred call has `genetics-inferred-ref-text' prepended to its
+interpretation and :call-source `inferred-ref'."
+  (let ((a (genetics-assess ann (genetics-snp-genotype snp))))
+    (if (genetics-snp-inferred-p snp)
+        (plist-put (plist-put a :interpretation
+                              (concat genetics-inferred-ref-text " "
+                                      (plist-get a :interpretation)))
+                   :call-source 'inferred-ref)
+      a)))
+
 ;;;; APOE
 
 (defconst genetics-apoe-snps '("rs429358" "rs7412")
@@ -346,12 +502,23 @@ e4 = C+C, e1 = C+T.  Returns a plist with :diplotype, :status (`ok',
             (_ ""))))
 
 (defun genetics-apoe-for-kit (kit)
-  "Return the APOE result plist for KIT, or nil if the SNPs are absent."
-  (let ((a (genetics-kit-get kit "rs429358"))
-        (b (genetics-kit-get kit "rs7412")))
+  "Return the APOE result plist for KIT, or nil if the SNPs are absent.
+The SNPs are found with `genetics-kit-resolve'.  The plist gains
+:inferred, the list of APOE rsids whose call was inferred rather than
+observed, and the description says so."
+  (let ((a (genetics-kit-resolve kit "rs429358"))
+        (b (genetics-kit-resolve kit "rs7412")))
     (when (and a b)
-      (genetics-apoe-interpret (genetics-snp-genotype a)
-                               (genetics-snp-genotype b)))))
+      (let ((res (genetics-apoe-interpret (genetics-snp-genotype a)
+                                          (genetics-snp-genotype b)))
+            (inferred (delq nil (list (and (genetics-snp-inferred-p a) "rs429358")
+                                      (and (genetics-snp-inferred-p b) "rs7412")))))
+        (if inferred
+            (plist-put (plist-put res :inferred inferred) :description
+                       (format "%s %s inferred homozygous reference (absent from a variant-only WGS VCF), not observed."
+                               (plist-get res :description)
+                               (string-join inferred " and ")))
+          res)))))
 
 (provide 'genetics-annotate)
 ;;; genetics-annotate.el ends here
