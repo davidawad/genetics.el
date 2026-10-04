@@ -1,0 +1,87 @@
+#+TITLE: Genetics report (synthetic sample)
+#+AUTHOR: genetics.el
+#+OPTIONS: toc:nil num:nil ^:nil
+#+STARTUP: shrink
+#+HTML_HEAD: <style>body{max-width:60rem;margin:2rem auto;font-family:system-ui,sans-serif;line-height:1.45;padding:0 1rem} table{border-collapse:collapse;font-size:.9rem} th,td{border:1px solid #ccc;padding:.25rem .5rem;vertical-align:top} th{background:#f2f2f2} dt{font-weight:600}</style>
+
+This document is built from the *synthetic* 23andMe-format fixture
+[[file:../test/fixtures/23andme-sample.txt][test/fixtures/23andme-sample.txt]] (not a real person's genotypes)
+with the three dynamic blocks of =genetics-org.el=.  Update every block
+with =C-u C-c C-x C-u=, or regenerate this file and its HTML export with
+=emacs -Q --batch -l examples/regenerate-report.el=.
+
+* Kit summary
+#+BEGIN: genetics-summary :file "../test/fixtures/23andme-sample.txt"
+- Kit :: 23andme-sample
+- File :: =~/src/genetics-el/test/fixtures/23andme-sample.txt=
+- Format :: 23andMe
+- Source :: Emacs Lisp parser
+- Assay :: array, every assayed site listed
+- Build :: GRCh37
+- Records :: 33
+- No-call rate :: 18.18% (6 no-calls)
+- Inferred sex :: female (non-PAR X heterozygosity 40.00%, Y called 0%)
+- Caveats ::
+  - 23andMe reports genotypes on the + (forward) strand of GRCh37; no liftover is performed.
+  - Positions are on GRCh37; they cannot be compared to data on another build without liftover, which this package does not do.
+  - The 23andMe chip version could not be determined.
+  - A genotyping array reads a fixed subset of known sites (about 0.02% of the genome); a site that is not on the chip is simply absent.
+  - Palindromic SNPs (A/T and C/G) cannot have their strand verified from the genotype alone.
+
+/Informational only, not medical advice./ Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+#+END:
+
+* Curated findings
+All curated annotation hits (the effect column is shrunk in Emacs by
+=:effect-width= and =#+STARTUP: shrink=; the export shows it in full):
+
+#+BEGIN: genetics-hits :kit "23andme-sample" :effect-width 40
+| rsid      | gene     | genotype | risk-allele copies | call source | magnitude | effect                                                                                                  | source |
+|-----------+----------+----------+--------------------+-------------+-----------+---------------------------------------------------------------------------------------------------------+--------|
+|           |          |          |                    |             |           | <40>                                                                                                    |        |
+| rs429358  | APOE     | CT       | 1 (C)              | observed    |         3 | Defines the APOE e4 allele together with rs7412 (e4 = C at rs429358 plus C at rs7412).                  | [[https://www.snpedia.com/index.php/Rs429358][source]] |
+| rs7412    | APOE     | CT       | 1 (T)              | observed    |         2 | Defines the APOE e2 allele together with rs429358 (e2 = T at rs429358 plus T at rs7412).                | [[https://www.snpedia.com/index.php/Rs7412][source]] |
+| rs4244285 | CYP2C19  | AG       | 1 (A)              | observed    |         3 | CYP2C19*2 (c.681G>A) is a loss-of-function allele that reduces metabolism of drugs such as clopidogrel. | [[https://www.snpedia.com/index.php/Rs4244285][source]] |
+| rs6025    | F5       | CC       | 0 (T)              | observed    |         4 | Factor V Leiden (R506Q).                                                                                | [[https://www.snpedia.com/index.php/Rs6025][source]] |
+| rs1800562 | HFE      | GG       | 0 (A)              | observed    |         4 | HFE C282Y.                                                                                              | [[https://www.snpedia.com/index.php/Rs1800562][source]] |
+| rs4988235 | MCM6/LCT | GG       | 0 (A)              | observed    |         1 | LCT -13910 C/T.                                                                                         | [[https://www.snpedia.com/index.php/Rs4988235][source]] |
+| rs1801131 | MTHFR    | TT       | 0 (G)              | observed    |         1 | MTHFR A1298C (E429A).                                                                                   | [[https://www.snpedia.com/index.php/Rs1801131][source]] |
+| rs1801133 | MTHFR    | AG       | 1 (A)              | observed    |         2 | MTHFR C677T (A222V).                                                                                    | [[https://www.snpedia.com/index.php/Rs1801133][source]] |
+
+Risk alleles are on the + strand; a genotype is never flipped automatically.
+
+/Informational only, not medical advice./ Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+#+END:
+
+Only magnitude 3 and above, in two genes:
+
+#+BEGIN: genetics-hits :kit "23andme-sample" :min-magnitude 3 :genes ("F5" "HFE")
+| rsid      | gene | genotype | risk-allele copies | call source | magnitude | effect                   | source |
+|-----------+------+----------+--------------------+-------------+-----------+--------------------------+--------|
+| rs6025    | F5   | CC       | 0 (T)              | observed    |         4 | Factor V Leiden (R506Q). | [[https://www.snpedia.com/index.php/Rs6025][source]] |
+| rs1800562 | HFE  | GG       | 0 (A)              | observed    |         4 | HFE C282Y.               | [[https://www.snpedia.com/index.php/Rs1800562][source]] |
+
+Risk alleles are on the + strand; a genotype is never flipped automatically.
+
+Filter: magnitude >= 3; genes F5, HFE.
+
+/Informational only, not medical advice./ Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+#+END:
+
+* APOE
+#+BEGIN: genetics-apoe :kit "23andme-sample"
+*APOE: e2/e4* (status: ambiguous). e2/e4 (most likely) or e1/e3 (very rare): the phase of a double heterozygote cannot be resolved from unphased genotypes, so e2/e4 is assumed. Calls: rs429358 CT, rs7412 CT. Method: rs429358 T/C and rs7412 C/T read on the + strand (e2 = T+T, e3 = T+C, e4 = C+C); genotypes are never flipped automatically, and an A/G call is reported as a possible strand flip. APOE e4 is a risk factor, not a diagnosis; most carriers never develop Alzheimer's disease.
+
+/Informational only, not medical advice./ Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+#+END:
+
+* A block that fails
+A block that cannot run is written as Org comments (hidden from the
+export) with what to do, and the rest of the document is untouched:
+
+#+BEGIN: genetics-apoe :kit "not-loaded"
+# genetics-apoe failed: No genetics kit available: No loaded kit named "not-loaded"
+# What to do: Load the kit with M-x genetics-open, or give the block :file "path/to/kit" (or :kit with a loaded kit's name).
+
+/Informational only, not medical advice./ Consumer genotyping and sequencing are not diagnostic; confirm any finding with a clinical-grade test and a clinician.
+#+END:

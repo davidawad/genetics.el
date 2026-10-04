@@ -13,6 +13,59 @@ when it is installed, otherwise the package's own Emacs Lisp parser. See
 > consumer sequencing are not diagnostic. Confirm any finding with a
 > clinical-grade test and a clinician.
 
+| Summary buffer | Filterable browser |
+|:--:|:--:|
+| [![Summary buffer of a synthetic 23andMe kit](docs/screenshots/summary.png)](docs/screenshots/summary.png) | [![Browser filtered to annotated SNPs](docs/screenshots/browse.png)](docs/screenshots/browse.png) |
+| `M-x genetics-open`: format, build, no-call rate, inferred sex, per-chromosome counts and strand/build caveats. | `M-x genetics-browse`, then `a`: the records of the kit filtered to curated SNPs (filters in the header line). |
+| **Lookup buffer** | **Org report from dynamic blocks** |
+| [![Lookup of rs429358 across three kits](docs/screenshots/lookup.png)](docs/screenshots/lookup.png) | [![Org report built from the genetics dynamic blocks](docs/screenshots/org-report.png)](docs/screenshots/org-report.png) |
+| `M-x genetics-lookup RET rs429358`: the call in every loaded kit, the curated annotation and its meaning per kit. | [`examples/genetics-report.org`](examples/genetics-report.org) ([HTML export](examples/genetics-report.html)): `genetics-summary`, `genetics-hits` and `genetics-apoe` blocks. |
+
+Every screenshot is real Emacs (`emacs -Q`, `modus-vivendi-tinted`,
+JetBrains Mono) under Xvfb, showing **synthetic** fixtures only:
+[`test/fixtures/23andme-sample.txt`](test/fixtures/23andme-sample.txt),
+[`myheritage-sample.csv`](test/fixtures/myheritage-sample.csv) and
+[`ancestry-sample.txt`](test/fixtures/ancestry-sample.txt). Regenerate them
+with [`examples/screenshots.sh`](examples/screenshots.sh) (driver:
+[`examples/screenshots.el`](examples/screenshots.el)); the sample report
+alone with `emacs -Q --batch -l examples/regenerate-report.el`.
+
+### What it reads
+
+| Input | Example | Status |
+|-------|---------|--------|
+| Genotyping arrays | 23andMe, AncestryDNA, MyHeritage, FamilyTreeDNA | Supported (a fixed ~0.02% of the genome) |
+| Whole-genome VCF | Nucleus `.vcf.gz`, GRCh37/GRCh38, with or without rsids | **Primary format**; multi-GB files offset-indexed; absent sites labelled *inferred* |
+| FASTQ reads | `R1.fastq.gz` + `R2.fastq.gz` | Via [genome-cli](https://gitlab.com/davidawad/genome-cli) `genome pipeline` → VCF |
+| BAM/CRAM, PDF/Promethease reports | | Not read (detected and explained) |
+
+Details: [What is supported, and what is not](#what-is-supported-and-what-is-not).
+
+### 60-second usage
+
+```elisp
+M-x genetics-open RET ~/dna/genome.txt RET   ; parse + summary buffer
+M-x genetics-browse                          ; table; c/p/s/g/n/h/o/a filter, x clears
+M-x genetics-lookup RET rs1801133 RET        ; one SNP in every loaded kit
+M-x genetics-report                          ; Org report (C-u: also save it)
+M-x genetics-compare                         ; concordance of two loaded kits
+M-x genetics-fastq-plan RET R1.fastq.gz ...  ; what genome-cli would run
+M-x genetics-fastq-run                       ; plan, confirm, run async
+```
+
+Or report from any Org file (`C-c C-x C-u` on a block fills it):
+
+```org
+#+BEGIN: genetics-summary :file "~/dna/genome.txt"
+#+END:
+#+BEGIN: genetics-hits :kit "genome" :min-magnitude 2
+#+END:
+#+BEGIN: genetics-apoe :kit "genome"
+#+END:
+```
+
+`genetics-open` prompts starting in `genetics-data-directory`.
+
 ## Overview
 
 - Auto-detects and parses 23andMe, AncestryDNA, MyHeritage / FamilyTreeDNA
@@ -34,6 +87,8 @@ when it is installed, otherwise the package's own Emacs Lisp parser. See
   and strand/build caveats.
 - Filterable tabulated browser, single-rsid lookup, annotation layer (JSON or
   Org), Org report with APOE haplotype, kit-to-kit comparison, CSV/JSON export.
+- Org dynamic blocks (`genetics-summary`, `genetics-hits`, `genetics-apoe`)
+  to put a kit's summary, curated hits and APOE result in any Org document.
 
 ## Install
 
@@ -54,20 +109,6 @@ or, with `package-vc` (Emacs 29+):
 ```elisp
 (package-vc-install "https://gitlab.com/davidawad/genetics-el")
 ```
-
-## Quick start
-
-```elisp
-M-x genetics-open RET ~/dna/genome.txt RET   ; parse + summary buffer
-M-x genetics-browse                          ; table of records
-M-x genetics-lookup RET rs1801133 RET        ; one SNP in every loaded kit
-M-x genetics-report                          ; Org report
-M-x genetics-compare                         ; two loaded kits
-M-x genetics-fastq-plan RET R1.fastq.gz ...  ; what genome-cli would run
-M-x genetics-fastq-run                       ; plan, confirm, run async
-```
-
-`genetics-open` prompts starting in `genetics-data-directory`.
 
 ## What is supported, and what is not
 
@@ -224,6 +265,8 @@ heterozygosity statistics and sex inference are not computed for them.
 | `genetics-fastq-plan` | Show `genome pipeline plan` for FASTQ reads (one file or an R1/R2 pair) |
 | `genetics-fastq-run` | Show the plan, confirm, run `genome pipeline run` asynchronously; offer to open the VCF |
 | `genetics-fastq-plan-explain`, `genetics-fastq-run-explain`, `genetics-source-genome-cli-explain` | Show the exact genome-cli command without running it |
+| `genetics-org-insert-block` | Insert and fill a `genetics-summary` / `genetics-hits` / `genetics-apoe` Org dynamic block |
+| `genetics-org-explain-block` | Say what the genetics dynamic block at point would read and insert, without running it |
 
 Summary buffer (`genetics-summary-mode`): `b` browse, `r` report, `l` lookup,
 `c` compare, `g` refresh; buttons for the same.
@@ -246,9 +289,44 @@ Browser (`genetics-browse-mode`, derived from `tabulated-list-mode`):
 FASTQ plan buffer (`genetics-fastq-plan-mode`): `x` runs the pipeline after
 confirmation. The run buffer is a `compilation-mode` buffer.
 
-Active filters are shown in the header line. At most `genetics-browse-limit`
+Active filters are shown in the header line; the column headings (click to
+sort) are the first line of the buffer. At most `genetics-browse-limit`
 rows are displayed; the header line says when the list is truncated. Exports
 are not limited.
+
+## Org dynamic blocks
+
+`genetics-org.el` (loaded with `genetics`) defines three Org dynamic blocks,
+so a kit can be reported on from any Org document; health-charts.el's report
+templates call them by name. Fill one with `C-c C-x C-u` on it, all of them
+with `C-u C-c C-x C-u`, or insert one with `M-x genetics-org-insert-block`.
+
+| Block | Inserts | Parameters |
+|-------|---------|------------|
+| `genetics-summary` | Description list: kit, file, format, source, assay, build, records, no-call rate, inferred sex, caveats | `:kit` or `:file` |
+| `genetics-hits` | Table of curated hits: rsid, gene, genotype, risk-allele copies, call source (`observed` / `inferred ref`), magnitude, effect, source link; then inferred-call and strand notes | `:kit` or `:file`, `:min-magnitude N`, `:genes ("APOE" "MTHFR")` (or `"APOE,MTHFR"`), `:effect-width N` (Org width cookie for the effect column) |
+| `genetics-apoe` | APOE diplotype paragraph with the report's caveats: phase ambiguity, inferred calls labelled, + strand method, never flipped | `:kit` or `:file` |
+
+- `:kit` names a loaded kit. `:file` is a genotype file: a kit already
+  loaded from it is reused; otherwise it is opened through
+  `genetics-source-function` (genome-cli reuses its own import when it is
+  newer than the file) and registered without showing a buffer. Relative
+  names are resolved from the Org file's directory. With neither, the only
+  loaded kit is used.
+- Every block ends with an *"Informational only, not medical advice"* line.
+- A failure never breaks the document: the block body becomes Org comment
+  lines (not exported) with the error and what to do, e.g.
+  `# genetics-apoe failed: No genetics kit available: No loaded kit named "x"`
+  followed by `# What to do: Load the kit with M-x genetics-open, ...`.
+- Pure explain twins say what a block would read and insert without opening
+  or running anything: `genetics-org-summary-explain`,
+  `genetics-org-hits-explain`, `genetics-org-apoe-explain` (each takes the
+  parameter plist), and `M-x genetics-org-explain-block` on a block. The
+  renderers `genetics-org-summary-string`, `genetics-org-hits-string` and
+  `genetics-org-apoe-string` take a kit and return the Org text.
+
+See [`examples/genetics-report.org`](examples/genetics-report.org) and its
+[HTML export](examples/genetics-report.html).
 
 ## Customization
 
@@ -400,12 +478,16 @@ Files: `genetics.el` (entry point), `genetics-core.el`, `genetics-parse.el`,
 `genetics-source.el` (native / genome-cli source layer),
 `genetics-fastq.el` (genome pipeline commands), `genetics-stats.el`,
 `genetics-annotate.el`, `genetics-browse.el`, `genetics-lookup.el`,
-`genetics-report.el`, `genetics-compare.el`, `genetics-export.el`,
-`genetics-snpedia.el`. Tests live in `test/*-test.el`, fixtures (synthetic,
+`genetics-report.el`, `genetics-org.el` (Org dynamic blocks),
+`genetics-compare.el`, `genetics-export.el`, `genetics-snpedia.el`. Tests live in `test/*-test.el`, fixtures (synthetic,
 fake genotypes) in `test/fixtures/`. `test/bin/genome` is a fake genome-cli
 that replays recorded, synthetic genome/v1 JSON from
 `test/fixtures/genome/` and logs each argv, so the genome-cli source is
 tested without the real binary.
+
+`examples/regenerate-report.el` rebuilds `examples/genetics-report.org` and
+its HTML export; `examples/screenshots.sh` rebuilds `docs/screenshots/`
+(graphical Emacs, Xvfb, xwd and ImageMagick; synthetic fixtures only).
 
 ## License
 
