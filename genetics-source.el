@@ -131,9 +131,17 @@ is run."
                                "Unknown genome command %S" command)))
          (list "--format" "json"))))
 
+(defun genetics--quote-arg (arg)
+  "Return ARG quoted for the platform shell, or bare when no shell needs it.
+`shell-quote-argument' wraps every word in quotes on Windows; a word of
+only these characters means the same unquoted in sh and cmd alike."
+  (if (string-match-p "\\`[-a-zA-Z0-9_./:=+,@]+\\'" arg)
+      arg
+    (shell-quote-argument arg)))
+
 (defun genetics-genome-argv-string (argv)
   "Return ARGV as one shell-quoted command line."
-  (mapconcat #'shell-quote-argument argv " "))
+  (mapconcat #'genetics--quote-arg argv " "))
 
 (defun genetics-source-genome-cli-explain (file)
   "Return the exact command `genetics-source-genome-cli' would run for FILE.
