@@ -1,16 +1,13 @@
-# Fast default CI: latest Emacs on Linux only. The full OS x Emacs matrix
-# lives in test-full.yml (run by hand, on version tags, and weekly).
-name: test
+# Optional full OS x Emacs matrix; the fast default is test.yml.
+name: test full matrix
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Optional: the slow cross-platform matrix. Push/PR runs test.yml (one fast job).
   workflow_dispatch:
-
-concurrency:
-  group: test-${{ github.ref }}
-  cancel-in-progress: true
+  push:
+    tags: ["v*"]
+  schedule:
+    - cron: "17 6 * * 1"
 
 jobs:
   test:
@@ -19,8 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        emacs: ['30.1']
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        emacs: ['29.1', '30.1']
     steps:
       - uses: actions/checkout@v4
 
