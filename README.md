@@ -127,13 +127,23 @@ Linux/X11-only maintainer script (Xvfb, xwd, ImageMagick).
 Files the package writes (exports, reports, caches, SNPedia answers) are
 always UTF-8 with LF line endings; input with CRLF line endings (files that
 passed through Windows) reads the same as LF. `genetics-data-directory`
-defaults to the macOS Google Drive folder only on macOS when it exists, and
-to `~/` elsewhere; if the configured directory is missing (a configuration
+defaults to `~/Documents/Genetics/` when it exists, and to `~/` otherwise; if the configured directory is missing (a configuration
 shared between machines), prompts start in `default-directory`.
+
+With straight.el:
 
 ```elisp
 (use-package genetics
-  :load-path "~/src/genetics-el"
+  :straight (genetics :host github :repo "davidawad/genetics.el")
+  :commands (genetics-open genetics-browse genetics-lookup
+             genetics-report genetics-compare))
+```
+
+or from a local checkout:
+
+```elisp
+(use-package genetics
+  :load-path "~/src/genetics.el"
   :commands (genetics-open genetics-browse genetics-lookup
              genetics-report genetics-compare))
 ```
