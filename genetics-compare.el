@@ -7,7 +7,7 @@
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: data, tools
-;; URL: https://gitlab.com/davidawad/genetics-el
+;; URL: https://github.com/davidawad/genetics.el
 
 ;; This file is not part of GNU Emacs.
 

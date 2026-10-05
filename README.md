@@ -5,7 +5,7 @@ exports inside Emacs. Everything runs locally; there is no network code
 except an opt-in, rsid-only SNPedia lookup (see [Privacy](#privacy)).
 
 Files are read through a swappable source layer: the
-[genome-cli](https://gitlab.com/davidawad/genome-cli) executable (`genome`)
+[genome-cli](https://github.com/davidawad/genome-cli) executable (`genome`)
 when it is installed, otherwise the package's own Emacs Lisp parser. See
 [Sources](#sources-genome-cli-or-the-native-parser).
 
@@ -36,7 +36,7 @@ alone with `emacs -Q --batch -l examples/regenerate-report.el`.
 |-------|---------|--------|
 | Genotyping arrays | 23andMe, AncestryDNA, MyHeritage, FamilyTreeDNA | Supported (a fixed ~0.02% of the genome) |
 | Whole-genome VCF | Nucleus `.vcf.gz`, GRCh37/GRCh38, with or without rsids | **Primary format**; multi-GB files offset-indexed; absent sites labelled *inferred* |
-| FASTQ reads | `R1.fastq.gz` + `R2.fastq.gz` | Via [genome-cli](https://gitlab.com/davidawad/genome-cli) `genome pipeline` → VCF |
+| FASTQ reads | `R1.fastq.gz` + `R2.fastq.gz` | Via [genome-cli](https://github.com/davidawad/genome-cli) `genome pipeline` → VCF |
 | BAM/CRAM, PDF/Promethease reports | | Not read (detected and explained) |
 
 Details: [What is supported, and what is not](#what-is-supported-and-what-is-not).
@@ -103,7 +103,7 @@ is used when present; Emacs 29 builds without it fall back to `json.el`.
 
 | | Emacs | gzip (optional) | genome-cli (optional) |
 |-|-------|-----------------|-----------------------|
-| Debian/Ubuntu | `sudo apt install emacs` | preinstalled (`sudo apt install gzip`) | see [genome-cli](https://gitlab.com/davidawad/genome-cli) |
+| Debian/Ubuntu | `sudo apt install emacs` | preinstalled (`sudo apt install gzip`) | see [genome-cli](https://github.com/davidawad/genome-cli) |
 | Fedora | `sudo dnf install emacs` | preinstalled (`sudo dnf install gzip`) | as above |
 | Arch | `sudo pacman -S emacs` | preinstalled (`sudo pacman -S gzip`) | as above |
 | macOS (Homebrew) | `brew install --cask emacs` | preinstalled (`/usr/bin/gzip`) | as above |
@@ -141,7 +141,7 @@ shared between machines), prompts start in `default-directory`.
 or, with `package-vc` (Emacs 29+):
 
 ```elisp
-(package-vc-install "https://gitlab.com/davidawad/genetics-el")
+(package-vc-install "https://github.com/davidawad/genetics.el")
 ```
 
 ## What is supported, and what is not
@@ -152,8 +152,8 @@ must first be turned into a VCF, and finished reports cannot be read at all.
 
 | File | What it is | Status |
 |------|------------|--------|
-| Whole-genome VCF (`.vcf` / `.vcf.gz`), e.g. Nucleus | Variant calls from sequencing the whole genome, usually GRCh38, often `.` in every ID and variant sites only | **Primary format.** Opening, summary, browsing and offset-indexed large files verified on a real 429 MB Nucleus file (5.1M records, ~30 s to index natively). Curated annotations, APOE and the report now work by GRCh37/GRCh38 position, with absent sites shown as *inferred* homozygous reference when the file is variant-only; this part is tested on synthetic files only. |
-| 23andMe raw data `.txt` | Genotyping-array calls at ~600k known SNPs, keyed by rsid, GRCh37 | **Supported, a subset.** Verified on a real v5 kit (638,573 SNPs, ~19 s to parse natively). An array reads a fixed ~0.02% of the genome, so a site not on the chip is just absent. |
+| Whole-genome VCF (`.vcf` / `.vcf.gz`), e.g. Nucleus | Variant calls from sequencing the whole genome, usually GRCh38, often `.` in every ID and variant sites only | **Primary format.** Opening, summary, browsing and offset-indexed large files verified on a ~430 MB whole-genome VCF (5.1M records, ~30 s to index natively). Curated annotations, APOE and the report now work by GRCh37/GRCh38 position, with absent sites shown as *inferred* homozygous reference when the file is variant-only; this part is tested on synthetic files only. |
+| 23andMe raw data `.txt` | Genotyping-array calls at ~600k known SNPs, keyed by rsid, GRCh37 | **Supported, a subset.** Verified on a v5 kit export (~640k SNPs, ~19 s to parse natively). An array reads a fixed ~0.02% of the genome, so a site not on the chip is just absent. |
 | AncestryDNA / MyHeritage / FamilyTreeDNA raw data | Same kind of array data, different column layouts | Supported, a subset; tested on synthetic fixtures only |
 | FASTQ (`.fastq`, `.fq`, `.gz`) | Raw sequencer reads (tens of GB), no genotypes yet | **Via the genome-cli pipeline.** `genetics-open` detects FASTQ and explains instead of failing. `genetics-fastq-plan` shows what `genome pipeline plan` would run (reference fetch, alignment, sorting, duplicate marking, variant calling, filtering, normalization); `genetics-fastq-run` runs it asynchronously and offers to open the resulting VCF. If your provider already gave you a VCF (Nucleus does), open that instead. Tested against a fake `genome` only. |
 | BAM / CRAM / SAM | Aligned reads | Not supported; detected and explained (variant-call to a VCF first) |
@@ -369,7 +369,7 @@ See [`examples/genetics-report.org`](examples/genetics-report.org) and its
 | `genetics-source-function` | `genetics-source-auto` | how files become kits: genome-cli when installed, else native (see [Sources](#sources-genome-cli-or-the-native-parser)) |
 | `genetics-genome-executable` | `"genome"` | name or path of genome-cli |
 | `genetics-genome-page-size` | 5000 | records per `genome query` call when browsing/exporting |
-| `genetics-data-directory` | on macOS `~/Documents/Genetics/` when it exists, else `~/` | start directory when prompting for a file (prompts fall back to `default-directory` if it does not exist) |
+| `genetics-data-directory` | `~/Documents/Genetics/` when it exists, else `~/` | start directory when prompting for a file (prompts fall back to `default-directory` if it does not exist) |
 | `genetics-use-cache` | `t` | cache natively parsed kits as `.eld` files |
 | `genetics-gzip-program` | `"gzip"` | gzip executable for `.gz` files; `nil` or not found: Emacs' zlib |
 | `genetics-cache-directory` | `(locate-user-emacs-file "genetics-cache/")` | cache location (also holds SNPedia answers, decompressed VCFs) |

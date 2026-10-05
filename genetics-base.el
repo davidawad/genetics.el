@@ -7,7 +7,7 @@
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: data, tools
-;; URL: https://gitlab.com/davidawad/genetics-el
+;; URL: https://github.com/davidawad/genetics.el
 
 ;; This file is not part of GNU Emacs.
 
@@ -42,17 +42,15 @@
 
 ;;;; Customization
 
-(defconst genetics--macos-data-directory
-  "~/Documents/Genetics/"
-  "The author's macOS Google Drive folder, used as the default when present.")
+(defconst genetics--conventional-data-directory "~/Documents/Genetics/"
+  "Conventional folder for raw-data files, the default when it exists.")
 
 (defun genetics--default-data-directory ()
   "Return the default for `genetics-data-directory' on this system.
-That is the macOS Google Drive folder when running on macOS and it
-exists, else the home directory."
-  (if (and (eq system-type 'darwin)
-           (file-directory-p genetics--macos-data-directory))
-      genetics--macos-data-directory
+That is `genetics--conventional-data-directory' when it exists, else
+the home directory.  Set `genetics-data-directory' to point elsewhere."
+  (if (file-directory-p genetics--conventional-data-directory)
+      genetics--conventional-data-directory
     "~/"))
 
 (defcustom genetics-data-directory (genetics--default-data-directory)
